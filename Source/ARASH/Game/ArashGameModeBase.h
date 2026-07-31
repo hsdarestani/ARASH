@@ -5,6 +5,7 @@
 #include "ArashGameModeBase.generated.h"
 
 class AArashEnemyBase;
+class UStaticMesh;
 
 UCLASS()
 class ARASH_API AArashGameModeBase : public AGameModeBase
@@ -20,6 +21,10 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Prototype")
     TSubclassOf<AArashEnemyBase> EnemyClass;
 
+    UPROPERTY()
+    TObjectPtr<UStaticMesh> PrototypeCubeMesh;
+
 private:
+    void SpawnPrototypeArena();
     void SpawnPrototypeEnemies();
 };
