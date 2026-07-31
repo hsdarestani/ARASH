@@ -1,5 +1,6 @@
 #include "Enemies/EnemyBoltProjectile.h"
 
+#include "Components/PointLightComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -25,7 +26,7 @@ AEnemyBoltProjectile::AEnemyBoltProjectile()
     VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Visual"));
     VisualMesh->SetupAttachment(Collision);
     VisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    VisualMesh->SetRelativeScale3D(FVector(0.22f));
+    VisualMesh->SetRelativeScale3D(FVector(0.24f));
 
     static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereAsset(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
     if (SphereAsset.Succeeded())
@@ -38,6 +39,13 @@ AEnemyBoltProjectile::AEnemyBoltProjectile()
     {
         VisualMesh->SetMaterial(0, BasicMaterial.Object);
     }
+
+    GlowLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("GlowLight"));
+    GlowLight->SetupAttachment(Collision);
+    GlowLight->SetIntensity(1800.0f);
+    GlowLight->SetAttenuationRadius(240.0f);
+    GlowLight->SetLightColor(FLinearColor(1.0f, 0.12f, 0.035f));
+    GlowLight->SetCastShadows(false);
 
     Movement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("Movement"));
     Movement->UpdatedComponent = Collision;
