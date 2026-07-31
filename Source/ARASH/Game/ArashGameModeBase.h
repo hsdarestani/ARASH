@@ -5,6 +5,7 @@
 #include "ArashGameModeBase.generated.h"
 
 class AArashEnemyBase;
+class AArashCharacter;
 class UStaticMesh;
 
 UCLASS()
@@ -14,6 +15,27 @@ class ARASH_API AArashGameModeBase : public AGameModeBase
 
 public:
     AArashGameModeBase();
+
+    UFUNCTION(BlueprintCallable, Category = "Run")
+    void NotifyEnemyKilled(AArashEnemyBase* Enemy);
+
+    UFUNCTION(BlueprintCallable, Category = "Run")
+    void NotifyPlayerDied();
+
+    UFUNCTION(BlueprintCallable, Category = "Run")
+    void SelectUpgrade(int32 UpgradeIndex);
+
+    UFUNCTION(BlueprintPure, Category = "Run")
+    int32 GetCurrentWave() const { return CurrentWave; }
+
+    UFUNCTION(BlueprintPure, Category = "Run")
+    int32 GetEnemiesRemaining() const { return EnemiesRemaining; }
+
+    UFUNCTION(BlueprintPure, Category = "Run")
+    bool IsWaitingForUpgrade() const { return bWaitingForUpgrade; }
+
+    UFUNCTION(BlueprintPure, Category = "Run")
+    bool IsGameOver() const { return bGameOver; }
 
 protected:
     virtual void BeginPlay() override;
@@ -26,5 +48,12 @@ protected:
 
 private:
     void SpawnPrototypeArena();
-    void SpawnPrototypeEnemies();
+    void StartWave();
+    void SpawnWaveEnemies(int32 WaveNumber);
+
+    int32 CurrentWave = 1;
+    int32 EnemiesRemaining = 0;
+    bool bWaitingForUpgrade = false;
+    bool bGameOver = false;
+    FVector ArenaCenter = FVector::ZeroVector;
 };
