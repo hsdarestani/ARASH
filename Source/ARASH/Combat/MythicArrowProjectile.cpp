@@ -1,5 +1,6 @@
 #include "Combat/MythicArrowProjectile.h"
 
+#include "Components/PointLightComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "DrawDebugHelpers.h"
@@ -25,22 +26,42 @@ AMythicArrowProjectile::AMythicArrowProjectile()
     Collision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
     RootComponent = Collision;
 
-    VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PrototypeVisual"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeAsset(TEXT("/Engine/BasicShapes/Cube.Cube"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> ConeAsset(TEXT("/Engine/BasicShapes/Cone.Cone"));
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> BasicMaterial(TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+
+    VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ArrowShaft"));
     VisualMesh->SetupAttachment(Collision);
     VisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    VisualMesh->SetRelativeScale3D(FVector(1.35f, 0.06f, 0.06f));
-
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> ArrowVisualAsset(TEXT("/Engine/BasicShapes/Cube.Cube"));
-    if (ArrowVisualAsset.Succeeded())
+    VisualMesh->SetRelativeScale3D(FVector(1.05f, 0.045f, 0.045f));
+    if (CubeAsset.Succeeded())
     {
-        VisualMesh->SetStaticMesh(ArrowVisualAsset.Object);
+        VisualMesh->SetStaticMesh(CubeAsset.Object);
     }
 
-    static ConstructorHelpers::FObjectFinder<UMaterialInterface> BasicMaterial(TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+    ArrowHeadMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ArrowHead"));
+    ArrowHeadMesh->SetupAttachment(Collision);
+    ArrowHeadMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    ArrowHeadMesh->SetRelativeLocation(FVector(62.0f, 0.0f, 0.0f));
+    ArrowHeadMesh->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
+    ArrowHeadMesh->SetRelativeScale3D(FVector(0.12f, 0.12f, 0.24f));
+    if (ConeAsset.Succeeded())
+    {
+        ArrowHeadMesh->SetStaticMesh(ConeAsset.Object);
+    }
+
     if (BasicMaterial.Succeeded())
     {
         VisualMesh->SetMaterial(0, BasicMaterial.Object);
+        ArrowHeadMesh->SetMaterial(0, BasicMaterial.Object);
     }
+
+    GlowLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("ArrowGlow"));
+    GlowLight->SetupAttachment(Collision);
+    GlowLight->SetIntensity(2200.0f);
+    GlowLight->SetAttenuationRadius(260.0f);
+    GlowLight->SetLightColor(FLinearColor(1.0f, 0.48f, 0.06f));
+    GlowLight->SetCastShadows(false);
 
     Movement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("Movement"));
     Movement->UpdatedComponent = Collision;
@@ -64,7 +85,8 @@ void AMythicArrowProjectile::BeginPlay()
         Collision->IgnoreActorWhenMoving(ArrowOwner, true);
     }
 
-    VisualMesh->SetVectorParameterValueOnMaterials(TEXT("Color"), FVector(0.95f, 0.60f, 0.10f));
+    VisualMesh->SetVectorParameterValueOnMaterials(TEXT("Color"), FVector(0.95f, 0.58f, 0.08f));
+    ArrowHeadMesh->SetVectorParameterValueOnMaterials(TEXT("Color"), FVector(0.98f, 0.82f, 0.30f));
 
     Collision->OnComponentBeginOverlap.AddDynamic(this, &AMythicArrowProjectile::OnArrowOverlap);
     Movement->OnProjectileBounce.AddDynamic(this, &AMythicArrowProjectile::OnProjectileBounce);
@@ -83,8 +105,9 @@ void AMythicArrowProjectile::Tick(float DeltaSeconds)
 #if WITH_EDITOR
     if (GetWorld() && Movement && !Movement->Velocity.IsNearlyZero())
     {
-        const FVector TrailEnd = GetActorLocation() - Movement->Velocity.GetSafeNormal() * 150.0f;
-        DrawDebugLine(GetWorld(), GetActorLocation(), TrailEnd, FColor(255, 170, 35), false, 0.06f, 0, 4.0f);
+        const FVector TrailEnd = GetActorLocation() - Movement->Velocity.GetSafeNormal() * 180.0f;
+        const FColor TrailColor = bReturning ? FColor(40, 220, 235) : FColor(255, 170, 35);
+        DrawDebugLine(GetWorld(), GetActorLocation(), TrailEnd, TrailColor, false, 0.06f, 0, 5.0f);
     }
 #endif
 
@@ -115,6 +138,14 @@ void AMythicArrowProjectile::BeginReturn()
     HitActors.Reset();
     Collision->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Ignore);
     Collision->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Ignore);
+
+    VisualMesh->SetVectorParameterValueOnMaterials(TEXT("Color"), FVector(0.02f, 0.72f, 0.82f));
+    ArrowHeadMesh->SetVectorParameterValueOnMaterials(TEXT("Color"), FVector(0.34f, 0.95f, 1.0f));
+    if (GlowLight)
+    {
+        GlowLight->SetLightColor(FLinearColor(0.02f, 0.75f, 0.95f));
+        GlowLight->SetIntensity(2800.0f);
+    }
 }
 
 void AMythicArrowProjectile::OnArrowOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
