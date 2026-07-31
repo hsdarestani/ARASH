@@ -4,6 +4,7 @@
 #include "Engine/World.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "Player/ArashCharacter.h"
 
 UArashBowComponent::UArashBowComponent()
 {
@@ -55,7 +56,20 @@ AMythicArrowProjectile* UArashBowComponent::ReleaseArrow()
     Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
     AMythicArrowProjectile* Arrow = World->SpawnActor<AMythicArrowProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, Params);
-    if (Arrow && Arrow->Movement)
+    if (!Arrow)
+    {
+        return nullptr;
+    }
+
+    if (const AArashCharacter* Player = Cast<AArashCharacter>(Owner))
+    {
+        Arrow->BaseDamage = Player->ArrowBaseDamage;
+        Arrow->MaxPierces = Player->ArrowMaxPierces;
+        Arrow->MaxBounces = Player->ArrowMaxBounces;
+        Arrow->ReturnSpeedMultiplier = Player->ArrowReturnSpeedMultiplier;
+    }
+
+    if (Arrow->Movement)
     {
         const float SpeedScale = FMath::Lerp(0.75f, 1.25f, ChargeAlpha);
         const float DamageScale = FMath::Lerp(0.70f, 1.45f, ChargeAlpha);
