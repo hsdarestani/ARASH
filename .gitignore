@@ -1,0 +1,28 @@
+# Unreal generated
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+.vs/
+.vscode/
+*.VC.db
+*.opensdf
+*.sdf
+*.sln
+*.suo
+*.xcodeproj
+*.xcworkspace
+
+# Build artifacts
+Build/Receipts/
+StagedBuilds/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
+
+# Secrets/local env
+.env
+.env.*
+!.env.example
