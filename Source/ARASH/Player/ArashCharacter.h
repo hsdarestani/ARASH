@@ -19,6 +19,8 @@ public:
 
     virtual void Tick(float DeltaSeconds) override;
     virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+    virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
+        AController* EventInstigator, AActor* DamageCauser) override;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
     TObjectPtr<USpringArmComponent> CameraBoom;
@@ -32,6 +34,42 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Prototype")
     TObjectPtr<UStaticMeshComponent> VisualMesh;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Survival")
+    float MaxHealth = 100.0f;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Survival")
+    float CurrentHealth = 100.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Survival")
+    float DamageInvulnerabilityTime = 0.65f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow Build")
+    float ArrowBaseDamage = 25.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow Build")
+    int32 ArrowMaxPierces = 1;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow Build")
+    int32 ArrowMaxBounces = 1;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow Build")
+    float ArrowReturnSpeedMultiplier = 1.0f;
+
+    UFUNCTION(BlueprintPure, Category = "Survival")
+    float GetHealthAlpha() const;
+
+    UFUNCTION(BlueprintPure, Category = "Survival")
+    bool IsDead() const { return bIsDead; }
+
+    UFUNCTION(BlueprintCallable, Category = "Arrow Build")
+    void ApplyPierceUpgrade();
+
+    UFUNCTION(BlueprintCallable, Category = "Arrow Build")
+    void ApplyRicochetUpgrade();
+
+    UFUNCTION(BlueprintCallable, Category = "Arrow Build")
+    void ApplyReturnUpgrade();
+
 protected:
     virtual void BeginPlay() override;
 
@@ -42,4 +80,12 @@ private:
     void StopFire();
     void Dodge();
     void UpdateAim();
+    void SelectUpgrade1();
+    void SelectUpgrade2();
+    void SelectUpgrade3();
+    void RestartRun();
+    bool CanUseCombat() const;
+
+    bool bIsDead = false;
+    float LastDamageTime = -1000.0f;
 };
