@@ -4,6 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "MythicArrowProjectile.generated.h"
 
+class UPointLightComponent;
 class USphereComponent;
 class UProjectileMovementComponent;
 class UStaticMeshComponent;
@@ -24,8 +25,14 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Arrow")
     TObjectPtr<UProjectileMovementComponent> Movement;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Prototype")
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Arrow")
     TObjectPtr<UStaticMeshComponent> VisualMesh;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Arrow")
+    TObjectPtr<UStaticMeshComponent> ArrowHeadMesh;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Arrow")
+    TObjectPtr<UPointLightComponent> GlowLight;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow|Combat")
     float BaseDamage = 25.0f;
