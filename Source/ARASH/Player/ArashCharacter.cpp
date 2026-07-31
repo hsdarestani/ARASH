@@ -2,9 +2,12 @@
 
 #include "Camera/CameraComponent.h"
 #include "Combat/ArashBowComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "UObject/ConstructorHelpers.h"
 
 AArashCharacter::AArashCharacter()
 {
@@ -17,10 +20,22 @@ AArashCharacter::AArashCharacter()
     GetCharacterMovement()->bOrientRotationToMovement = false;
     GetCharacterMovement()->MaxWalkSpeed = 650.0f;
 
+    VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PrototypeVisual"));
+    VisualMesh->SetupAttachment(RootComponent);
+    VisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    VisualMesh->SetRelativeScale3D(FVector(0.55f, 0.55f, 1.6f));
+
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> PlayerVisualAsset(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
+    if (PlayerVisualAsset.Succeeded())
+    {
+        VisualMesh->SetStaticMesh(PlayerVisualAsset.Object);
+    }
+
     CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
     CameraBoom->SetupAttachment(RootComponent);
     CameraBoom->TargetArmLength = 1050.0f;
-    CameraBoom->SetRelativeRotation(FRotator(-58.0f, 0.0f, 0.0f));
+    CameraBoom->SetUsingAbsoluteRotation(true);
+    CameraBoom->SetRelativeRotation(FRotator(-58.0f, -45.0f, 0.0f));
     CameraBoom->bDoCollisionTest = false;
     CameraBoom->bUsePawnControlRotation = false;
 
