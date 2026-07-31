@@ -18,6 +18,9 @@ public:
     virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
         AController* EventInstigator, AActor* DamageCauser) override;
 
+    UFUNCTION(BlueprintCallable, Category = "Enemy")
+    void ConfigureForWave(int32 WaveNumber);
+
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Prototype")
     TObjectPtr<UStaticMeshComponent> VisualMesh;
 
@@ -33,6 +36,12 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
     float AttackStopDistance = 180.0f;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
+    float ContactDamage = 18.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
+    float AttackCooldown = 1.0f;
+
 protected:
     virtual void BeginPlay() override;
 
@@ -41,4 +50,10 @@ protected:
 
     UFUNCTION(BlueprintImplementableEvent, Category = "Enemy")
     void OnDeath();
+
+private:
+    float LastAttackTime = -1000.0f;
+    float HitFeedbackRemaining = 0.0f;
+    bool bDead = false;
+    FVector DefaultVisualScale = FVector(0.7f, 0.7f, 1.4f);
 };
