@@ -28,6 +28,27 @@ AArashGameModeBase::AArashGameModeBase()
     {
         PrototypeMaterial = BasicMaterial.Object;
     }
+
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> FloorMaterial(
+        TEXT("/Game/Art/CC0/PolyHaven/marble_01/M_marble_01.M_marble_01"));
+    if (FloorMaterial.Succeeded())
+    {
+        CourtFloorMaterial = FloorMaterial.Object;
+    }
+
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> WallMaterial(
+        TEXT("/Game/Art/CC0/PolyHaven/red_sandstone_wall/M_red_sandstone_wall.M_red_sandstone_wall"));
+    if (WallMaterial.Succeeded())
+    {
+        CourtWallMaterial = WallMaterial.Object;
+    }
+
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> StoneMaterial(
+        TEXT("/Game/Art/CC0/PolyHaven/sandstone_blocks_05/M_sandstone_blocks_05.M_sandstone_blocks_05"));
+    if (StoneMaterial.Succeeded())
+    {
+        CourtStoneMaterial = StoneMaterial.Object;
+    }
 }
 
 void AArashGameModeBase::BeginPlay()
@@ -45,7 +66,7 @@ void AArashGameModeBase::BeginPlay()
 }
 
 AStaticMeshActor* AArashGameModeBase::SpawnArenaBlock(const FVector& Location, const FVector& Scale,
-    const FVector& Color, bool bCollision)
+    const FVector& Color, bool bCollision, UMaterialInterface* OverrideMaterial)
 {
     UWorld* World = GetWorld();
     if (!World || !PrototypeCubeMesh)
@@ -65,10 +86,16 @@ AStaticMeshActor* AArashGameModeBase::SpawnArenaBlock(const FVector& Location, c
     UStaticMeshComponent* Mesh = Block->GetStaticMeshComponent();
     Mesh->SetStaticMesh(PrototypeCubeMesh);
     Mesh->SetCollisionProfileName(bCollision ? TEXT("BlockAll") : TEXT("NoCollision"));
-    if (PrototypeMaterial)
+
+    UMaterialInterface* MaterialToUse = OverrideMaterial ? OverrideMaterial : PrototypeMaterial.Get();
+    if (MaterialToUse)
     {
-        Mesh->SetMaterial(0, PrototypeMaterial);
-        Mesh->SetVectorParameterValueOnMaterials(TEXT("Color"), Color);
+        Mesh->SetMaterial(0, MaterialToUse);
+
+        if (MaterialToUse == PrototypeMaterial.Get())
+        {
+            Mesh->SetVectorParameterValueOnMaterials(TEXT("Color"), Color);
+        }
     }
 
     Block->SetActorScale3D(Scale);
@@ -86,10 +113,19 @@ void AArashGameModeBase::SpawnPrototypeArena()
     constexpr float WallHeight = 300.0f;
     const FVector LapisColor(0.025f, 0.16f, 0.25f);
 
-    SpawnArenaBlock(ArenaCenter + FVector(HalfExtent, 0.0f, WallHeight * 0.5f), FVector(1.0f, 29.0f, 3.0f), LapisColor, true);
-    SpawnArenaBlock(ArenaCenter + FVector(-HalfExtent, 0.0f, WallHeight * 0.5f), FVector(1.0f, 29.0f, 3.0f), LapisColor, true);
-    SpawnArenaBlock(ArenaCenter + FVector(0.0f, HalfExtent, WallHeight * 0.5f), FVector(29.0f, 1.0f, 3.0f), LapisColor, true);
-    SpawnArenaBlock(ArenaCenter + FVector(0.0f, -HalfExtent, WallHeight * 0.5f), FVector(29.0f, 1.0f, 3.0f), LapisColor, true);
+    // A thin visual floor rides above the template floor while keeping the original
+    // collision/visibility surface underneath for reliable mouse aiming.
+    SpawnArenaBlock(
+        ArenaCenter + FVector(0.0f, 0.0f, 2.0f),
+        FVector(28.7f, 28.7f, 0.035f),
+        FVector(0.72f, 0.68f, 0.56f),
+        false,
+        CourtFloorMaterial);
+
+    SpawnArenaBlock(ArenaCenter + FVector(HalfExtent, 0.0f, WallHeight * 0.5f), FVector(1.0f, 29.0f, 3.0f), LapisColor, true, CourtWallMaterial);
+    SpawnArenaBlock(ArenaCenter + FVector(-HalfExtent, 0.0f, WallHeight * 0.5f), FVector(1.0f, 29.0f, 3.0f), LapisColor, true, CourtWallMaterial);
+    SpawnArenaBlock(ArenaCenter + FVector(0.0f, HalfExtent, WallHeight * 0.5f), FVector(29.0f, 1.0f, 3.0f), LapisColor, true, CourtWallMaterial);
+    SpawnArenaBlock(ArenaCenter + FVector(0.0f, -HalfExtent, WallHeight * 0.5f), FVector(29.0f, 1.0f, 3.0f), LapisColor, true, CourtWallMaterial);
 
     SpawnPersianCourtDetails();
 }
@@ -105,7 +141,7 @@ void AArashGameModeBase::SpawnPersianCourtDetails()
         for (int32 YSign : {-1, 1})
         {
             const FVector CornerCenter = ArenaCenter + FVector(Corner * XSign, Corner * YSign, 0.0f);
-            SpawnArenaBlock(CornerCenter + FVector(0.0f, 0.0f, 45.0f), FVector(1.6f, 1.6f, 0.9f), TurquoiseColor, false);
+            SpawnArenaBlock(CornerCenter + FVector(0.0f, 0.0f, 45.0f), FVector(1.6f, 1.6f, 0.9f), TurquoiseColor, false, CourtStoneMaterial);
             SpawnArenaBlock(CornerCenter + FVector(0.0f, 0.0f, 270.0f), FVector(0.62f, 0.62f, 4.5f), GoldColor, false);
             SpawnArenaBlock(CornerCenter + FVector(0.0f, 0.0f, 505.0f), FVector(1.25f, 1.25f, 0.35f), GoldColor, false);
         }
@@ -121,7 +157,7 @@ void AArashGameModeBase::SpawnPersianCourtDetails()
 
     for (const FVector& Offset : MarkerOffsets)
     {
-        SpawnArenaBlock(ArenaCenter + Offset, FVector(1.7f, 1.7f, 0.28f), TurquoiseColor, false);
+        SpawnArenaBlock(ArenaCenter + Offset, FVector(1.7f, 1.7f, 0.28f), TurquoiseColor, false, CourtStoneMaterial);
     }
 }
 
