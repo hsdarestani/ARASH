@@ -2,6 +2,7 @@
 
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "DrawDebugHelpers.h"
 #include "Engine/StaticMesh.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -25,7 +26,7 @@ AMythicArrowProjectile::AMythicArrowProjectile()
     VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PrototypeVisual"));
     VisualMesh->SetupAttachment(Collision);
     VisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    VisualMesh->SetRelativeScale3D(FVector(0.9f, 0.045f, 0.045f));
+    VisualMesh->SetRelativeScale3D(FVector(1.35f, 0.06f, 0.06f));
 
     static ConstructorHelpers::FObjectFinder<UStaticMesh> ArrowVisualAsset(TEXT("/Engine/BasicShapes/Cube.Cube"));
     if (ArrowVisualAsset.Succeeded())
@@ -35,8 +36,8 @@ AMythicArrowProjectile::AMythicArrowProjectile()
 
     Movement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("Movement"));
     Movement->UpdatedComponent = Collision;
-    Movement->InitialSpeed = 2400.0f;
-    Movement->MaxSpeed = 3200.0f;
+    Movement->InitialSpeed = 2100.0f;
+    Movement->MaxSpeed = 3000.0f;
     Movement->ProjectileGravityScale = 0.0f;
     Movement->bRotationFollowsVelocity = true;
     Movement->bShouldBounce = true;
@@ -68,6 +69,14 @@ void AMythicArrowProjectile::BeginPlay()
 void AMythicArrowProjectile::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+
+#if WITH_EDITOR
+    if (GetWorld() && Movement && !Movement->Velocity.IsNearlyZero())
+    {
+        const FVector TrailEnd = GetActorLocation() - Movement->Velocity.GetSafeNormal() * 150.0f;
+        DrawDebugLine(GetWorld(), GetActorLocation(), TrailEnd, FColor(255, 170, 35), false, 0.06f, 0, 4.0f);
+    }
+#endif
 
     if (!bReturning || !IsValid(GetOwner()))
     {
