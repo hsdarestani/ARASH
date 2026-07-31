@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "TimerManager.h"
 #include "ArashCharacter.generated.h"
 
 class USpringArmComponent;
@@ -71,7 +72,7 @@ public:
     void ApplyReturnUpgrade();
 
     UFUNCTION(BlueprintCallable, Category = "Combat Feedback")
-    void PlayCombatFeedback(float Strength = 1.0f, bool bUseHitStop = true);
+    void PlayCombatFeedback(float Strength, bool bUseHitStop);
 
 protected:
     virtual void BeginPlay() override;
