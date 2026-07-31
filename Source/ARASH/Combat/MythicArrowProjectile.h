@@ -6,6 +6,7 @@
 
 class USphereComponent;
 class UProjectileMovementComponent;
+class UStaticMeshComponent;
 
 UCLASS()
 class ARASH_API AMythicArrowProjectile : public AActor
@@ -23,17 +24,20 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Arrow")
     TObjectPtr<UProjectileMovementComponent> Movement;
 
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Prototype")
+    TObjectPtr<UStaticMeshComponent> VisualMesh;
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow|Combat")
     float BaseDamage = 25.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow|Combat", meta = (ClampMin = "0"))
-    int32 MaxPierces = 0;
+    int32 MaxPierces = 1;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow|Combat", meta = (ClampMin = "0"))
-    int32 MaxBounces = 0;
+    int32 MaxBounces = 1;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow|Combat")
-    bool bReturnToOwner = false;
+    bool bReturnToOwner = true;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow|Combat", meta = (ClampMin = "0.05"))
     float ReturnDelay = 1.25f;
