@@ -32,17 +32,29 @@ Use `2k` while iterating on lower-end hardware; use `4k` for the normal producti
 
 Close and reopen Unreal after pulling the project so `PythonScriptPlugin` and `EditorScriptingUtilities` are enabled.
 
-Run from Unreal's Python console or with the editor command-line Python execution flow:
+**Important:** run the importer from the full Unreal Editor, not `UnrealEditor-Cmd` / `-run=pythonscript`. UE material editing can assert on rooted MaterialEditor objects when destructive material operations happen in commandlet mode.
+
+Preferred flow:
+
+1. Open `ARASH.uproject` normally.
+2. Use `File -> Execute Python Script`.
+3. Choose `Tools/ArtPipeline/import_polyhaven.py`.
+
+Or run from Unreal's Python console:
 
 ```python
 exec(open(r"D:/Projects/ARASH/Tools/ArtPipeline/import_polyhaven.py", encoding="utf-8").read())
 ```
+
+The importer is intentionally non-destructive: it never clears existing material expression graphs. If a completed material already exists, it is left untouched. For a clean retry after a failed first import, remove or move only `/Game/Art/CC0/PolyHaven/` while the editor is closed, then rerun the importer.
 
 The importer creates assets under:
 
 `/Game/Art/CC0/PolyHaven/`
 
 For textures it wires Base Color, DirectX Normal, AO, Roughness and Metallic. ARM maps are unpacked as R=AO, G=Roughness, B=Metallic. Displacement maps are imported but intentionally not connected yet; Nanite displacement will be introduced only for materials/meshes where it is visually justified.
+
+After import completes, restart the editor so the ARASH GameMode constructor can resolve the newly-created court materials.
 
 ## 3. Version control
 
