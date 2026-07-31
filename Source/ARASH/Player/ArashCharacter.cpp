@@ -10,6 +10,8 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Materials/MaterialInterface.h"
+#include "TimerManager.h"
 #include "UObject/ConstructorHelpers.h"
 
 AArashCharacter::AArashCharacter()
@@ -34,6 +36,12 @@ AArashCharacter::AArashCharacter()
         VisualMesh->SetStaticMesh(PlayerVisualAsset.Object);
     }
 
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> BasicMaterial(TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+    if (BasicMaterial.Succeeded())
+    {
+        VisualMesh->SetMaterial(0, BasicMaterial.Object);
+    }
+
     CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
     CameraBoom->SetupAttachment(RootComponent);
     CameraBoom->TargetArmLength = 1050.0f;
@@ -54,6 +62,7 @@ void AArashCharacter::BeginPlay()
     Super::BeginPlay();
 
     CurrentHealth = MaxHealth;
+    VisualMesh->SetVectorParameterValueOnMaterials(TEXT("Color"), FVector(0.02f, 0.28f, 0.34f));
 
     if (APlayerController* PC = Cast<APlayerController>(GetController()))
     {
@@ -70,6 +79,8 @@ void AArashCharacter::Tick(float DeltaSeconds)
     {
         UpdateAim();
     }
+
+    UpdateCombatFeedback(DeltaSeconds);
 }
 
 void AArashCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -160,6 +171,49 @@ void AArashCharacter::UpdateAim()
     }
 }
 
+void AArashCharacter::PlayCombatFeedback(float Strength, bool bUseHitStop)
+{
+    CameraFeedbackStrength = FMath::Max(CameraFeedbackStrength, FMath::Clamp(Strength, 0.1f, 2.0f));
+    CameraFeedbackRemaining = 0.11f;
+    CameraFeedbackElapsed = 0.0f;
+
+    if (bUseHitStop && GetWorld())
+    {
+        UGameplayStatics::SetGlobalTimeDilation(this, 0.48f);
+        GetWorldTimerManager().ClearTimer(HitStopTimerHandle);
+        GetWorldTimerManager().SetTimer(HitStopTimerHandle, this, &AArashCharacter::EndHitStop, 0.028f, false);
+    }
+}
+
+void AArashCharacter::UpdateCombatFeedback(float DeltaSeconds)
+{
+    if (!CameraBoom)
+    {
+        return;
+    }
+
+    if (CameraFeedbackRemaining <= 0.0f)
+    {
+        CameraBoom->SocketOffset = FVector::ZeroVector;
+        CameraFeedbackStrength = 0.0f;
+        return;
+    }
+
+    CameraFeedbackElapsed += DeltaSeconds;
+    CameraFeedbackRemaining -= DeltaSeconds;
+
+    const float Alpha = FMath::Clamp(CameraFeedbackRemaining / 0.11f, 0.0f, 1.0f);
+    const float Wave = FMath::Sin(CameraFeedbackElapsed * 92.0f);
+    const float SideKick = Wave * 18.0f * CameraFeedbackStrength * Alpha;
+    const float VerticalKick = FMath::Abs(Wave) * 7.0f * CameraFeedbackStrength * Alpha;
+    CameraBoom->SocketOffset = FVector(0.0f, SideKick, VerticalKick);
+}
+
+void AArashCharacter::EndHitStop()
+{
+    UGameplayStatics::SetGlobalTimeDilation(this, 1.0f);
+}
+
 float AArashCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
     AController* EventInstigator, AActor* DamageCauser)
 {
@@ -178,10 +232,12 @@ float AArashCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Damage
     const float FinalDamage = Applied > 0.0f ? Applied : DamageAmount;
     LastDamageTime = Now;
     CurrentHealth = FMath::Max(0.0f, CurrentHealth - FinalDamage);
+    PlayCombatFeedback(0.85f, false);
 
     if (CurrentHealth <= 0.0f)
     {
         bIsDead = true;
+        EndHitStop();
         GetCharacterMovement()->DisableMovement();
 
         if (AArashGameModeBase* GameMode = Cast<AArashGameModeBase>(UGameplayStatics::GetGameMode(this)))
@@ -245,6 +301,7 @@ void AArashCharacter::RestartRun()
         return;
     }
 
+    EndHitStop();
     const FString LevelName = UGameplayStatics::GetCurrentLevelName(this, true);
     UGameplayStatics::OpenLevel(this, FName(*LevelName));
 }
