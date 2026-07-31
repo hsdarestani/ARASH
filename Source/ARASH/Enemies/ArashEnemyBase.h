@@ -30,6 +30,9 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
     float ChaseSpeed = 360.0f;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
+    float AttackStopDistance = 180.0f;
+
 protected:
     virtual void BeginPlay() override;
 
