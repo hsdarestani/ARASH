@@ -25,8 +25,8 @@ def import_file(filename: str, destination_path: str):
     task.filename = filename
     task.destination_path = destination_path
     task.automated = True
-    task.replace_existing = True
-    task.save = True
+    task.replace_existing = False
+    task.save = False
 
     unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
     imported_paths = list(task.imported_object_paths)
@@ -58,23 +58,21 @@ def create_texture_sample(material, texture, x: int, y: int):
     return node
 
 
-def create_or_rebuild_material(asset_id: str, textures: dict, destination_path: str):
+def create_material_once(asset_id: str, textures: dict, destination_path: str):
     asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
     material_name = f"M_{safe_asset_name(asset_id)}"
     material_path = f"{destination_path}/{material_name}"
 
     if unreal.EditorAssetLibrary.does_asset_exist(material_path):
-        material = unreal.EditorAssetLibrary.load_asset(material_path)
-    else:
-        factory = unreal.MaterialFactoryNew()
-        material = asset_tools.create_asset(
-            material_name, destination_path, unreal.Material, factory
-        )
+        log(f"Material already exists, leaving it untouched: {material_path}")
+        return unreal.EditorAssetLibrary.load_asset(material_path)
 
+    factory = unreal.MaterialFactoryNew()
+    material = asset_tools.create_asset(
+        material_name, destination_path, unreal.Material, factory
+    )
     if not material:
         raise RuntimeError(f"Could not create material {material_path}")
-
-    unreal.MaterialEditingLibrary.delete_all_material_expressions(material)
 
     diff = textures.get("diff")
     normal = textures.get("normal")
@@ -123,8 +121,10 @@ def create_or_rebuild_material(asset_id: str, textures: dict, destination_path: 
                 node, "R", unreal.MaterialProperty.MP_METALLIC
             )
 
-    unreal.MaterialEditingLibrary.layout_material_expressions(material)
-    unreal.MaterialEditingLibrary.recompile_material(material)
+    # Deliberately avoid delete_all_material_expressions(), layout_material_expressions()
+    # and commandlet-side material rebuilds. UE can assert on rooted MaterialEditor
+    # objects during those destructive operations. The material is new, so there is
+    # nothing to clear; saving it is enough for the editor to compile it normally.
     unreal.EditorAssetLibrary.save_loaded_asset(material)
     log(f"Built {material_path}")
     return material
@@ -159,6 +159,7 @@ def main() -> None:
     with open(MANIFEST_PATH, "r", encoding="utf-8-sig") as handle:
         manifest = json.load(handle)
 
+    log("SAFE MODE: run this from the full Unreal Editor, not a commandlet.")
     log("Importing CC0 source art. Powered by Poly Haven.")
 
     for item in manifest:
@@ -173,6 +174,12 @@ def main() -> None:
                 if os.path.isfile(full_path):
                     import_file(full_path, f"{DEST_ROOT}/HDRI")
                     log(f"Imported HDRI {filename}")
+            continue
+
+        material_name = f"M_{safe_asset_name(asset_id)}"
+        material_path = f"{destination}/{material_name}"
+        if unreal.EditorAssetLibrary.does_asset_exist(material_path):
+            log(f"Skipping completed material: {material_path}")
             continue
 
         textures = {}
@@ -195,9 +202,10 @@ def main() -> None:
             log(f"WARNING: {asset_id} has no diffuse map; material skipped")
             continue
 
-        create_or_rebuild_material(asset_id, textures, destination)
+        create_material_once(asset_id, textures, destination)
 
-    log("Import complete. Save All, then commit Content/Art/CC0 with Git LFS.")
+    unreal.EditorLoadingAndSavingUtils.save_dirty_packages(True, True)
+    log("Import complete. Restart the editor so ARASH picks up the new court materials.")
 
 
 if __name__ == "__main__":
