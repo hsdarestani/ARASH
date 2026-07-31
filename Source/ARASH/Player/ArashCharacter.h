@@ -7,6 +7,7 @@
 class USpringArmComponent;
 class UCameraComponent;
 class UArashBowComponent;
+class UStaticMeshComponent;
 
 UCLASS()
 class ARASH_API AArashCharacter : public ACharacter
@@ -27,6 +28,9 @@ public:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
     TObjectPtr<UArashBowComponent> Bow;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Prototype")
+    TObjectPtr<UStaticMeshComponent> VisualMesh;
 
 protected:
     virtual void BeginPlay() override;
