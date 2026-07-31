@@ -13,5 +13,5 @@ public:
     virtual void DrawHUD() override;
 
 private:
-    void DrawBar(float X, float Y, float Width, float Height, float Alpha, const FLinearColor& FillColor) const;
+    void DrawBar(float X, float Y, float Width, float Height, float Alpha, const FLinearColor& FillColor);
 };
