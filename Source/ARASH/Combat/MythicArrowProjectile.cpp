@@ -1,9 +1,12 @@
 #include "Combat/MythicArrowProjectile.h"
 
 #include "Components/SphereComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
+#include "UObject/ConstructorHelpers.h"
 
 AMythicArrowProjectile::AMythicArrowProjectile()
 {
@@ -18,6 +21,17 @@ AMythicArrowProjectile::AMythicArrowProjectile()
     Collision->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
     Collision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
     RootComponent = Collision;
+
+    VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PrototypeVisual"));
+    VisualMesh->SetupAttachment(Collision);
+    VisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    VisualMesh->SetRelativeScale3D(FVector(0.9f, 0.045f, 0.045f));
+
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> ArrowVisualAsset(TEXT("/Engine/BasicShapes/Cube.Cube"));
+    if (ArrowVisualAsset.Succeeded())
+    {
+        VisualMesh->SetStaticMesh(ArrowVisualAsset.Object);
+    }
 
     Movement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("Movement"));
     Movement->UpdatedComponent = Collision;
