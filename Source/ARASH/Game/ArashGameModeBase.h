@@ -51,12 +51,21 @@ protected:
     UPROPERTY()
     TObjectPtr<UMaterialInterface> PrototypeMaterial;
 
+    UPROPERTY()
+    TObjectPtr<UMaterialInterface> CourtFloorMaterial;
+
+    UPROPERTY()
+    TObjectPtr<UMaterialInterface> CourtWallMaterial;
+
+    UPROPERTY()
+    TObjectPtr<UMaterialInterface> CourtStoneMaterial;
+
 private:
     void SpawnPrototypeArena();
     void SpawnPersianCourtDetails();
     void SpawnCinematicLights();
     AStaticMeshActor* SpawnArenaBlock(const FVector& Location, const FVector& Scale,
-        const FVector& Color, bool bCollision);
+        const FVector& Color, bool bCollision, UMaterialInterface* OverrideMaterial = nullptr);
     void StartWave();
     void SpawnWaveEnemies(int32 WaveNumber);
 
