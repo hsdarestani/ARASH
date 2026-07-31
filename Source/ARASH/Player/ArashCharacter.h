@@ -5,6 +5,7 @@
 #include "TimerManager.h"
 #include "ArashCharacter.generated.h"
 
+class USceneComponent;
 class USpringArmComponent;
 class UCameraComponent;
 class UArashBowComponent;
@@ -33,6 +34,9 @@ public:
     TObjectPtr<UArashBowComponent> Bow;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
+    TObjectPtr<USceneComponent> VisualRoot;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
     TObjectPtr<UStaticMeshComponent> VisualMesh;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
@@ -42,10 +46,25 @@ public:
     TObjectPtr<UStaticMeshComponent> MantleMesh;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
+    TObjectPtr<UStaticMeshComponent> LeftArmMesh;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
+    TObjectPtr<UStaticMeshComponent> RightArmMesh;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
     TObjectPtr<UStaticMeshComponent> BowUpperMesh;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
     TObjectPtr<UStaticMeshComponent> BowLowerMesh;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
+    TObjectPtr<UStaticMeshComponent> BowStringUpperMesh;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
+    TObjectPtr<UStaticMeshComponent> BowStringLowerMesh;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
+    TObjectPtr<UStaticMeshComponent> NockedArrowMesh;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
     TObjectPtr<UStaticMeshComponent> QuiverMesh;
@@ -99,6 +118,7 @@ private:
     void StopFire();
     void Dodge();
     void UpdateAim();
+    void UpdateVisualAnimation(float DeltaSeconds);
     void UpdateCombatFeedback(float DeltaSeconds);
     void EndHitStop();
     void SelectUpgrade1();
@@ -109,6 +129,9 @@ private:
 
     bool bIsDead = false;
     float LastDamageTime = -1000.0f;
+    float VisualTime = 0.0f;
+    float DodgeVisualRemaining = 0.0f;
+    float DodgeVisualSide = 1.0f;
     float CameraFeedbackRemaining = 0.0f;
     float CameraFeedbackElapsed = 0.0f;
     float CameraFeedbackStrength = 0.0f;
