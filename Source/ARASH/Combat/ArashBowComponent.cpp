@@ -3,6 +3,7 @@
 #include "Combat/MythicArrowProjectile.h"
 #include "Engine/World.h"
 #include "GameFramework/Pawn.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 
 UArashBowComponent::UArashBowComponent()
 {
