@@ -1,6 +1,8 @@
 #include "Game/ArashGameModeBase.h"
 
+#include "Components/PointLightComponent.h"
 #include "Enemies/ArashEnemyBase.h"
+#include "Engine/PointLight.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/StaticMeshActor.h"
 #include "Game/ArashHUD.h"
@@ -38,6 +40,7 @@ void AArashGameModeBase::BeginPlay()
     }
 
     SpawnPrototypeArena();
+    SpawnCinematicLights();
     StartWave();
 }
 
@@ -119,6 +122,52 @@ void AArashGameModeBase::SpawnPersianCourtDetails()
     for (const FVector& Offset : MarkerOffsets)
     {
         SpawnArenaBlock(ArenaCenter + Offset, FVector(1.7f, 1.7f, 0.28f), TurquoiseColor, false);
+    }
+}
+
+void AArashGameModeBase::SpawnCinematicLights()
+{
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        return;
+    }
+
+#if PLATFORM_ANDROID || PLATFORM_IOS
+    constexpr bool bCastAccentShadows = false;
+    constexpr float AccentIntensity = 1500.0f;
+#else
+    constexpr bool bCastAccentShadows = true;
+    constexpr float AccentIntensity = 3600.0f;
+#endif
+
+    constexpr float LightOffset = 1110.0f;
+    const FVector LightPositions[] =
+    {
+        ArenaCenter + FVector(LightOffset, LightOffset, 440.0f),
+        ArenaCenter + FVector(-LightOffset, LightOffset, 440.0f),
+        ArenaCenter + FVector(LightOffset, -LightOffset, 440.0f),
+        ArenaCenter + FVector(-LightOffset, -LightOffset, 440.0f)
+    };
+
+    for (const FVector& Position : LightPositions)
+    {
+        FActorSpawnParameters Params;
+        Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+        APointLight* AccentLight = World->SpawnActor<APointLight>(Position, FRotator::ZeroRotator, Params);
+        if (!AccentLight || !AccentLight->PointLightComponent)
+        {
+            continue;
+        }
+
+        UPointLightComponent* Light = AccentLight->PointLightComponent;
+        Light->SetMobility(EComponentMobility::Movable);
+        Light->SetIntensity(AccentIntensity);
+        Light->SetAttenuationRadius(760.0f);
+        Light->SetLightColor(FLinearColor(1.0f, 0.38f, 0.08f));
+        Light->SetCastShadows(bCastAccentShadows);
+        Light->SetVolumetricScatteringIntensity(1.25f);
     }
 }
 
