@@ -32,8 +32,23 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
     TObjectPtr<UArashBowComponent> Bow;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Prototype")
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
     TObjectPtr<UStaticMeshComponent> VisualMesh;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
+    TObjectPtr<UStaticMeshComponent> HeadMesh;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
+    TObjectPtr<UStaticMeshComponent> MantleMesh;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
+    TObjectPtr<UStaticMeshComponent> BowUpperMesh;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
+    TObjectPtr<UStaticMeshComponent> BowLowerMesh;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
+    TObjectPtr<UStaticMeshComponent> QuiverMesh;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Survival")
     float MaxHealth = 100.0f;
