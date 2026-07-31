@@ -90,7 +90,7 @@ void AMythicArrowProjectile::Tick(float DeltaSeconds)
         return;
     }
 
-    const FVector DesiredVelocity = ToOwner.GetSafeNormal() * Movement->MaxSpeed;
+    const FVector DesiredVelocity = ToOwner.GetSafeNormal() * Movement->MaxSpeed * ReturnSpeedMultiplier;
     Movement->Velocity = FMath::VInterpTo(Movement->Velocity, DesiredVelocity, DeltaSeconds, 8.0f);
 }
 
