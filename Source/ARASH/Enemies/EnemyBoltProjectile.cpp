@@ -4,10 +4,10 @@
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
-#include "GameFramework/Pawn.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Materials/MaterialInterface.h"
+#include "Player/ArashCharacter.h"
 #include "UObject/ConstructorHelpers.h"
 
 AEnemyBoltProjectile::AEnemyBoltProjectile()
@@ -76,13 +76,13 @@ void AEnemyBoltProjectile::OnBoltOverlap(UPrimitiveComponent* OverlappedComponen
     UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep,
     const FHitResult& SweepResult)
 {
-    APawn* Pawn = Cast<APawn>(OtherActor);
-    if (!Pawn || Pawn == GetOwner() || Pawn == GetInstigator())
+    AArashCharacter* Player = Cast<AArashCharacter>(OtherActor);
+    if (!Player)
     {
         return;
     }
 
-    UGameplayStatics::ApplyDamage(Pawn, Damage, GetInstigatorController(), this, UDamageType::StaticClass());
+    UGameplayStatics::ApplyDamage(Player, Damage, GetInstigatorController(), this, UDamageType::StaticClass());
     Destroy();
 }
 
