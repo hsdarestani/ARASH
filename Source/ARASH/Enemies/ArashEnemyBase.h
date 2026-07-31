@@ -30,8 +30,14 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Enemy")
     void ConfigureForWave(int32 WaveNumber, EArashEnemyArchetype NewArchetype);
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Prototype")
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
     TObjectPtr<UStaticMeshComponent> VisualMesh;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
+    TObjectPtr<UStaticMeshComponent> AccentMesh;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
+    TObjectPtr<UStaticMeshComponent> WeaponMesh;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Enemy")
     EArashEnemyArchetype Archetype = EArashEnemyArchetype::Raider;
