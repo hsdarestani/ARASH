@@ -4,6 +4,8 @@
 #include "GameFramework/GameModeBase.h"
 #include "ArashGameModeBase.generated.h"
 
+class AArashEnemyBase;
+
 UCLASS()
 class ARASH_API AArashGameModeBase : public AGameModeBase
 {
@@ -11,4 +13,13 @@ class ARASH_API AArashGameModeBase : public AGameModeBase
 
 public:
     AArashGameModeBase();
+
+protected:
+    virtual void BeginPlay() override;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Prototype")
+    TSubclassOf<AArashEnemyBase> EnemyClass;
+
+private:
+    void SpawnPrototypeEnemies();
 };
