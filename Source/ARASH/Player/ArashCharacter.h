@@ -9,7 +9,6 @@ class USceneComponent;
 class USpringArmComponent;
 class UCameraComponent;
 class UArashBowComponent;
-class UPointLightComponent;
 class UStaticMeshComponent;
 
 UCLASS()
@@ -69,9 +68,6 @@ public:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
     TObjectPtr<UStaticMeshComponent> QuiverMesh;
-
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
-    TObjectPtr<UPointLightComponent> ChargeGlow;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Survival")
     float MaxHealth = 100.0f;
