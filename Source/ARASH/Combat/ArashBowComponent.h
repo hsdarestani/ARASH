@@ -30,7 +30,7 @@ public:
     float GetChargeAlpha() const;
 
     UFUNCTION(BlueprintPure, Category = "Bow")
-    bool HasActiveArrow() const { return ActiveArrow.IsValid(); }
+    bool IsArrowActive() const { return ActiveArrow.IsValid(); }
 
 private:
     bool bCharging = false;
