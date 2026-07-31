@@ -1,0 +1,41 @@
+name: Deploy ARASH infrastructure
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "ops/**"
+      - ".github/workflows/deploy-infra.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install sshpass
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
+      - name: Upload bootstrap script
+        env:
+          HOST: ${{ secrets.HOST }}
+          PASS: ${{ secrets.PASS }}
+        run: |
+          test -n "$HOST"
+          test -n "$PASS"
+          sshpass -p "$PASS" scp \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            ops/bootstrap-server.sh root@"$HOST":/root/bootstrap-arash.sh
+
+      - name: Bootstrap server
+        env:
+          HOST: ${{ secrets.HOST }}
+          PASS: ${{ secrets.PASS }}
+        run: |
+          sshpass -p "$PASS" ssh \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            root@"$HOST" "chmod 700 /root/bootstrap-arash.sh && /root/bootstrap-arash.sh"
