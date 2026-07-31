@@ -61,7 +61,7 @@ void AArashHUD::DrawHUD()
     }
 }
 
-void AArashHUD::DrawBar(float X, float Y, float Width, float Height, float Alpha, const FLinearColor& FillColor) const
+void AArashHUD::DrawBar(float X, float Y, float Width, float Height, float Alpha, const FLinearColor& FillColor)
 {
     if (!Canvas)
     {
@@ -69,6 +69,6 @@ void AArashHUD::DrawBar(float X, float Y, float Width, float Height, float Alpha
     }
 
     const float ClampedAlpha = FMath::Clamp(Alpha, 0.0f, 1.0f);
-    const_cast<AArashHUD*>(this)->DrawRect(FLinearColor(0.03f, 0.03f, 0.03f, 0.9f), X, Y, Width, Height);
-    const_cast<AArashHUD*>(this)->DrawRect(FillColor, X + 2.0f, Y + 2.0f, (Width - 4.0f) * ClampedAlpha, Height - 4.0f);
+    DrawRect(FLinearColor(0.03f, 0.03f, 0.03f, 0.9f), X, Y, Width, Height);
+    DrawRect(FillColor, X + 2.0f, Y + 2.0f, (Width - 4.0f) * ClampedAlpha, Height - 4.0f);
 }
