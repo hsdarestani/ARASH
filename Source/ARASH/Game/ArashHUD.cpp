@@ -28,14 +28,42 @@ void AArashHUD::DrawHUD()
     UFont* Font = GEngine->GetSmallFont();
 
     DrawText(TEXT("ARASH"), FLinearColor::White, 36.0f, 30.0f, Font, 1.6f, false);
+    DrawText(TEXT("ONE ARROW. AN ARMY."), FLinearColor(0.70f, 0.88f, 0.90f, 1.0f), 36.0f, 58.0f, Font, 0.82f, false);
+
     DrawText(FString::Printf(TEXT("WAVE %d"), GameMode->GetCurrentWave()), FLinearColor::White, ScreenW - 170.0f, 34.0f, Font, 1.25f, false);
     DrawText(FString::Printf(TEXT("ENEMIES %d"), GameMode->GetEnemiesRemaining()), FLinearColor(0.85f, 0.85f, 0.85f, 1.0f), ScreenW - 170.0f, 58.0f, Font, 1.0f, false);
 
     DrawText(FString::Printf(TEXT("HP %.0f / %.0f"), Player->CurrentHealth, Player->MaxHealth), FLinearColor::White, 36.0f, ScreenH - 88.0f, Font, 1.0f, false);
     DrawBar(36.0f, ScreenH - 60.0f, 280.0f, 18.0f, Player->GetHealthAlpha(), FLinearColor(0.72f, 0.08f, 0.06f, 1.0f));
 
+    DrawText(
+        FString::Printf(TEXT("PIERCE %d   RICOCHET %d   RETURN x%.2f"),
+            Player->ArrowMaxPierces,
+            Player->ArrowMaxBounces,
+            Player->ArrowReturnSpeedMultiplier),
+        FLinearColor(0.78f, 0.78f, 0.78f, 1.0f),
+        36.0f,
+        ScreenH - 118.0f,
+        Font,
+        0.82f,
+        false);
+
     if (Player->Bow)
     {
+        const bool bArrowActive = Player->Bow->IsArrowActive();
+        const FLinearColor ArrowStateColor = bArrowActive
+            ? FLinearColor(0.05f, 0.80f, 0.90f, 1.0f)
+            : FLinearColor(1.0f, 0.65f, 0.12f, 1.0f);
+
+        DrawText(
+            bArrowActive ? TEXT("ONE ARROW  //  IN FLIGHT") : TEXT("ONE ARROW  //  READY"),
+            ArrowStateColor,
+            ScreenW * 0.5f - 105.0f,
+            30.0f,
+            Font,
+            0.95f,
+            false);
+
         const float Charge = Player->Bow->GetChargeAlpha();
         if (Charge > KINDA_SMALL_NUMBER)
         {
