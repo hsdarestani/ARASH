@@ -49,6 +49,12 @@ protected:
     TObjectPtr<UStaticMesh> PrototypeCubeMesh;
 
     UPROPERTY()
+    TObjectPtr<UStaticMesh> PrototypeCylinderMesh;
+
+    UPROPERTY()
+    TObjectPtr<UStaticMesh> PrototypeSphereMesh;
+
+    UPROPERTY()
     TObjectPtr<UMaterialInterface> PrototypeMaterial;
 
     UPROPERTY()
@@ -60,12 +66,26 @@ protected:
     UPROPERTY()
     TObjectPtr<UMaterialInterface> CourtStoneMaterial;
 
+    UPROPERTY()
+    TObjectPtr<UMaterialInterface> CourtMetalMaterial;
+
 private:
     void SpawnPrototypeArena();
     void SpawnPersianCourtDetails();
+    void SpawnFloorInlay();
+    void SpawnColumn(const FVector& BaseLocation, float Scale = 1.0f);
+    void SpawnBrazier(const FVector& BaseLocation);
+    void SpawnOuterRuins();
     void SpawnCinematicLights();
+    void SpawnAtmosphere();
+
+    AStaticMeshActor* SpawnArenaMesh(UStaticMesh* MeshAsset, const FVector& Location,
+        const FVector& Scale, const FRotator& Rotation, const FVector& Color,
+        bool bCollision, UMaterialInterface* OverrideMaterial = nullptr);
+
     AStaticMeshActor* SpawnArenaBlock(const FVector& Location, const FVector& Scale,
         const FVector& Color, bool bCollision, UMaterialInterface* OverrideMaterial = nullptr);
+
     void StartWave();
     void SpawnWaveEnemies(int32 WaveNumber);
 
