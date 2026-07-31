@@ -17,6 +17,9 @@ Saved/
 Build/Receipts/
 StagedBuilds/
 
+# Downloaded source art (reproducible via Tools/ArtPipeline)
+ArtSource/
+
 # OS/editor
 .DS_Store
 Thumbs.db
