@@ -15,28 +15,46 @@ AArashEnemyBase::AArashEnemyBase()
 {
     PrimaryActorTick.bCanEverTick = true;
 
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> RaiderAsset(TEXT("/Engine/BasicShapes/Cone.Cone"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> WardenAsset(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeAsset(TEXT("/Engine/BasicShapes/Cube.Cube"));
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> BasicMaterial(TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+
     VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PrototypeVisual"));
     VisualMesh->SetupAttachment(RootComponent);
     VisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     VisualMesh->SetRelativeScale3D(DefaultVisualScale);
 
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> RaiderAsset(TEXT("/Engine/BasicShapes/Cone.Cone"));
+    AccentMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("AccentVisual"));
+    AccentMesh->SetupAttachment(RootComponent);
+    AccentMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+    WeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WeaponVisual"));
+    WeaponMesh->SetupAttachment(RootComponent);
+    WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
     if (RaiderAsset.Succeeded())
     {
         RaiderMesh = RaiderAsset.Object;
         VisualMesh->SetStaticMesh(RaiderMesh);
     }
 
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> WardenAsset(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
     if (WardenAsset.Succeeded())
     {
         WardenMesh = WardenAsset.Object;
     }
 
-    static ConstructorHelpers::FObjectFinder<UMaterialInterface> BasicMaterial(TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+    if (CubeAsset.Succeeded())
+    {
+        AccentMesh->SetStaticMesh(CubeAsset.Object);
+        WeaponMesh->SetStaticMesh(CubeAsset.Object);
+    }
+
     if (BasicMaterial.Succeeded())
     {
         VisualMesh->SetMaterial(0, BasicMaterial.Object);
+        AccentMesh->SetMaterial(0, BasicMaterial.Object);
+        WeaponMesh->SetMaterial(0, BasicMaterial.Object);
     }
 
     ProjectileClass = AEnemyBoltProjectile::StaticClass();
@@ -65,20 +83,44 @@ void AArashEnemyBase::ConfigureForWave(int32 WaveNumber, EArashEnemyArchetype Ne
         ChaseSpeed *= 0.78f;
         ContactDamage *= 0.65f;
         DefaultVisualScale = FVector(0.58f, 0.58f, 0.92f);
+
         if (WardenMesh)
         {
             VisualMesh->SetStaticMesh(WardenMesh);
         }
+
         VisualMesh->SetVectorParameterValueOnMaterials(TEXT("Color"), FVector(0.84f, 0.53f, 0.12f));
+
+        AccentMesh->SetRelativeLocation(FVector(0.0f, 0.0f, 58.0f));
+        AccentMesh->SetRelativeScale3D(FVector(0.50f, 0.08f, 0.12f));
+        AccentMesh->SetRelativeRotation(FRotator(0.0f, 45.0f, 0.0f));
+        AccentMesh->SetVectorParameterValueOnMaterials(TEXT("Color"), FVector(0.02f, 0.30f, 0.36f));
+
+        WeaponMesh->SetRelativeLocation(FVector(-22.0f, 0.0f, -28.0f));
+        WeaponMesh->SetRelativeScale3D(FVector(0.22f, 0.22f, 0.70f));
+        WeaponMesh->SetRelativeRotation(FRotator::ZeroRotator);
+        WeaponMesh->SetVectorParameterValueOnMaterials(TEXT("Color"), FVector(0.035f, 0.09f, 0.16f));
     }
     else
     {
         DefaultVisualScale = FVector(0.7f, 0.7f, 1.4f);
+
         if (RaiderMesh)
         {
             VisualMesh->SetStaticMesh(RaiderMesh);
         }
+
         VisualMesh->SetVectorParameterValueOnMaterials(TEXT("Color"), FVector(0.48f, 0.055f, 0.045f));
+
+        AccentMesh->SetRelativeLocation(FVector(4.0f, 44.0f, 18.0f));
+        AccentMesh->SetRelativeScale3D(FVector(0.16f, 0.42f, 0.50f));
+        AccentMesh->SetRelativeRotation(FRotator(0.0f, 8.0f, 0.0f));
+        AccentMesh->SetVectorParameterValueOnMaterials(TEXT("Color"), FVector(0.12f, 0.075f, 0.035f));
+
+        WeaponMesh->SetRelativeLocation(FVector(2.0f, -45.0f, 35.0f));
+        WeaponMesh->SetRelativeScale3D(FVector(0.035f, 0.035f, 0.88f));
+        WeaponMesh->SetRelativeRotation(FRotator(0.0f, 0.0f, 7.0f));
+        WeaponMesh->SetVectorParameterValueOnMaterials(TEXT("Color"), FVector(0.68f, 0.38f, 0.10f));
     }
 
     CurrentHealth = MaxHealth;
@@ -245,6 +287,14 @@ float AArashEnemyBase::TakeDamage(float DamageAmount, FDamageEvent const& Damage
         if (VisualMesh)
         {
             VisualMesh->SetRelativeScale3D(DefaultVisualScale * 0.45f);
+        }
+        if (AccentMesh)
+        {
+            AccentMesh->SetVisibility(false, true);
+        }
+        if (WeaponMesh)
+        {
+            WeaponMesh->SetVisibility(false, true);
         }
 
         OnDeath();
