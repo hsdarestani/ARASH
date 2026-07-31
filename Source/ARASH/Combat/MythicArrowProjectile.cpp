@@ -6,6 +6,8 @@
 #include "Engine/StaticMesh.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Materials/MaterialInterface.h"
+#include "Player/ArashCharacter.h"
 #include "TimerManager.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -34,6 +36,12 @@ AMythicArrowProjectile::AMythicArrowProjectile()
         VisualMesh->SetStaticMesh(ArrowVisualAsset.Object);
     }
 
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> BasicMaterial(TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+    if (BasicMaterial.Succeeded())
+    {
+        VisualMesh->SetMaterial(0, BasicMaterial.Object);
+    }
+
     Movement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("Movement"));
     Movement->UpdatedComponent = Collision;
     Movement->InitialSpeed = 2100.0f;
@@ -55,6 +63,8 @@ void AMythicArrowProjectile::BeginPlay()
     {
         Collision->IgnoreActorWhenMoving(ArrowOwner, true);
     }
+
+    VisualMesh->SetVectorParameterValueOnMaterials(TEXT("Color"), FVector(0.95f, 0.60f, 0.10f));
 
     Collision->OnComponentBeginOverlap.AddDynamic(this, &AMythicArrowProjectile::OnArrowOverlap);
     Movement->OnProjectileBounce.AddDynamic(this, &AMythicArrowProjectile::OnProjectileBounce);
@@ -130,6 +140,15 @@ void AMythicArrowProjectile::OnArrowOverlap(UPrimitiveComponent* OverlappedCompo
         this,
         UDamageType::StaticClass());
 
+    if (AArashCharacter* Player = Cast<AArashCharacter>(GetOwner()))
+    {
+        Player->PlayCombatFeedback(bReturning ? 0.28f : 0.48f, !bReturning);
+    }
+
+#if WITH_EDITOR
+    DrawDebugSphere(GetWorld(), GetActorLocation(), 42.0f, 10, FColor(255, 190, 60), false, 0.10f, 0, 3.0f);
+#endif
+
     if (!bReturning)
     {
         ++PierceCount;
@@ -153,6 +172,15 @@ void AMythicArrowProjectile::OnProjectileBounce(const FHitResult& ImpactResult, 
     {
         return;
     }
+
+    if (AArashCharacter* Player = Cast<AArashCharacter>(GetOwner()))
+    {
+        Player->PlayCombatFeedback(0.16f, false);
+    }
+
+#if WITH_EDITOR
+    DrawDebugSphere(GetWorld(), ImpactResult.ImpactPoint, 28.0f, 8, FColor(70, 210, 220), false, 0.08f, 0, 2.0f);
+#endif
 
     ++BounceCount;
     if (BounceCount > MaxBounces)
