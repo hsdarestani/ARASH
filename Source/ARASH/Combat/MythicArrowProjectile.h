@@ -42,6 +42,9 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow|Combat", meta = (ClampMin = "0.05"))
     float ReturnDelay = 1.25f;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arrow|Combat", meta = (ClampMin = "0.25"))
+    float ReturnSpeedMultiplier = 1.0f;
+
     UFUNCTION(BlueprintCallable, Category = "Arrow")
     void BeginReturn();
 
