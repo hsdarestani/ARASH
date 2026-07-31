@@ -70,6 +70,9 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Arrow Build")
     void ApplyReturnUpgrade();
 
+    UFUNCTION(BlueprintCallable, Category = "Combat Feedback")
+    void PlayCombatFeedback(float Strength = 1.0f, bool bUseHitStop = true);
+
 protected:
     virtual void BeginPlay() override;
 
@@ -80,6 +83,8 @@ private:
     void StopFire();
     void Dodge();
     void UpdateAim();
+    void UpdateCombatFeedback(float DeltaSeconds);
+    void EndHitStop();
     void SelectUpgrade1();
     void SelectUpgrade2();
     void SelectUpgrade3();
@@ -88,4 +93,8 @@ private:
 
     bool bIsDead = false;
     float LastDamageTime = -1000.0f;
+    float CameraFeedbackRemaining = 0.0f;
+    float CameraFeedbackElapsed = 0.0f;
+    float CameraFeedbackStrength = 0.0f;
+    FTimerHandle HitStopTimerHandle;
 };
