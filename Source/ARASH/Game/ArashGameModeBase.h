@@ -6,6 +6,8 @@
 
 class AArashEnemyBase;
 class AArashCharacter;
+class AStaticMeshActor;
+class UMaterialInterface;
 class UStaticMesh;
 
 UCLASS()
@@ -46,8 +48,14 @@ protected:
     UPROPERTY()
     TObjectPtr<UStaticMesh> PrototypeCubeMesh;
 
+    UPROPERTY()
+    TObjectPtr<UMaterialInterface> PrototypeMaterial;
+
 private:
     void SpawnPrototypeArena();
+    void SpawnPersianCourtDetails();
+    AStaticMeshActor* SpawnArenaBlock(const FVector& Location, const FVector& Scale,
+        const FVector& Color, bool bCollision);
     void StartWave();
     void SpawnWaveEnemies(int32 WaveNumber);
 
