@@ -1,11 +1,25 @@
 #include "Enemies/ArashEnemyBase.h"
 
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "UObject/ConstructorHelpers.h"
 
 AArashEnemyBase::AArashEnemyBase()
 {
     PrimaryActorTick.bCanEverTick = true;
+
+    VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PrototypeVisual"));
+    VisualMesh->SetupAttachment(RootComponent);
+    VisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    VisualMesh->SetRelativeScale3D(FVector(0.7f, 0.7f, 1.4f));
+
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> EnemyVisualAsset(TEXT("/Engine/BasicShapes/Cone.Cone"));
+    if (EnemyVisualAsset.Succeeded())
+    {
+        VisualMesh->SetStaticMesh(EnemyVisualAsset.Object);
+    }
 }
 
 void AArashEnemyBase::BeginPlay()
@@ -32,8 +46,8 @@ void AArashEnemyBase::Tick(float DeltaSeconds)
     if (!Direction.IsNearlyZero())
     {
         Direction.Normalize();
-        AddMovementInput(Direction, 1.0f);
         SetActorRotation(Direction.Rotation());
+        AddActorWorldOffset(Direction * ChaseSpeed * DeltaSeconds, true);
     }
 }
 
