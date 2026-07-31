@@ -1,0 +1,19 @@
+{
+  "FileVersion": 3,
+  "EngineAssociation": "5.8",
+  "Category": "Games",
+  "Description": "Persian-mythic action roguelite vertical slice.",
+  "Modules": [
+    {
+      "Name": "ARASH",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    }
+  ],
+  "Plugins": [
+    {
+      "Name": "Niagara",
+      "Enabled": true
+    }
+  ]
+}
