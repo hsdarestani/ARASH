@@ -4,6 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "EnemyBoltProjectile.generated.h"
 
+class UPointLightComponent;
 class USphereComponent;
 class UProjectileMovementComponent;
 class UStaticMeshComponent;
@@ -24,6 +25,9 @@ public:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Bolt")
     TObjectPtr<UStaticMeshComponent> VisualMesh;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Bolt")
+    TObjectPtr<UPointLightComponent> GlowLight;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bolt")
     float Damage = 14.0f;
