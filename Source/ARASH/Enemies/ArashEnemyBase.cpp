@@ -40,13 +40,20 @@ void AArashEnemyBase::Tick(float DeltaSeconds)
         return;
     }
 
-    FVector Direction = Player->GetActorLocation() - GetActorLocation();
-    Direction.Z = 0.0f;
+    FVector ToPlayer = Player->GetActorLocation() - GetActorLocation();
+    ToPlayer.Z = 0.0f;
 
-    if (!Direction.IsNearlyZero())
+    const float DistanceToPlayer = ToPlayer.Size();
+    if (DistanceToPlayer <= KINDA_SMALL_NUMBER)
     {
-        Direction.Normalize();
-        SetActorRotation(Direction.Rotation());
+        return;
+    }
+
+    const FVector Direction = ToPlayer / DistanceToPlayer;
+    SetActorRotation(Direction.Rotation());
+
+    if (DistanceToPlayer > AttackStopDistance)
+    {
         AddActorWorldOffset(Direction * ChaseSpeed * DeltaSeconds, true);
     }
 }
