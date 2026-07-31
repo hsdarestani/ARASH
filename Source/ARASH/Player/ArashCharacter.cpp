@@ -25,21 +25,82 @@ AArashCharacter::AArashCharacter()
     GetCharacterMovement()->bOrientRotationToMovement = false;
     GetCharacterMovement()->MaxWalkSpeed = 650.0f;
 
-    VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PrototypeVisual"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> CylinderAsset(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereAsset(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeAsset(TEXT("/Engine/BasicShapes/Cube.Cube"));
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> BasicMaterial(TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+
+    VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BodyVisual"));
     VisualMesh->SetupAttachment(RootComponent);
     VisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    VisualMesh->SetRelativeScale3D(FVector(0.55f, 0.55f, 1.6f));
-
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> PlayerVisualAsset(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
-    if (PlayerVisualAsset.Succeeded())
+    VisualMesh->SetRelativeLocation(FVector(0.0f, 0.0f, 8.0f));
+    VisualMesh->SetRelativeScale3D(FVector(0.42f, 0.30f, 0.95f));
+    if (CylinderAsset.Succeeded())
     {
-        VisualMesh->SetStaticMesh(PlayerVisualAsset.Object);
+        VisualMesh->SetStaticMesh(CylinderAsset.Object);
     }
 
-    static ConstructorHelpers::FObjectFinder<UMaterialInterface> BasicMaterial(TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+    HeadMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HeadVisual"));
+    HeadMesh->SetupAttachment(RootComponent);
+    HeadMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    HeadMesh->SetRelativeLocation(FVector(0.0f, 0.0f, 91.0f));
+    HeadMesh->SetRelativeScale3D(FVector(0.25f));
+    if (SphereAsset.Succeeded())
+    {
+        HeadMesh->SetStaticMesh(SphereAsset.Object);
+    }
+
+    MantleMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MantleVisual"));
+    MantleMesh->SetupAttachment(RootComponent);
+    MantleMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    MantleMesh->SetRelativeLocation(FVector(-4.0f, 0.0f, 52.0f));
+    MantleMesh->SetRelativeScale3D(FVector(0.27f, 0.52f, 0.11f));
+    if (CubeAsset.Succeeded())
+    {
+        MantleMesh->SetStaticMesh(CubeAsset.Object);
+    }
+
+    BowUpperMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BowUpperVisual"));
+    BowUpperMesh->SetupAttachment(RootComponent);
+    BowUpperMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    BowUpperMesh->SetRelativeLocation(FVector(18.0f, -48.0f, 43.0f));
+    BowUpperMesh->SetRelativeRotation(FRotator(0.0f, 0.0f, -11.0f));
+    BowUpperMesh->SetRelativeScale3D(FVector(0.035f, 0.035f, 0.54f));
+    if (CubeAsset.Succeeded())
+    {
+        BowUpperMesh->SetStaticMesh(CubeAsset.Object);
+    }
+
+    BowLowerMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BowLowerVisual"));
+    BowLowerMesh->SetupAttachment(RootComponent);
+    BowLowerMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    BowLowerMesh->SetRelativeLocation(FVector(18.0f, -48.0f, -5.0f));
+    BowLowerMesh->SetRelativeRotation(FRotator(0.0f, 0.0f, 11.0f));
+    BowLowerMesh->SetRelativeScale3D(FVector(0.035f, 0.035f, 0.54f));
+    if (CubeAsset.Succeeded())
+    {
+        BowLowerMesh->SetStaticMesh(CubeAsset.Object);
+    }
+
+    QuiverMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("QuiverVisual"));
+    QuiverMesh->SetupAttachment(RootComponent);
+    QuiverMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    QuiverMesh->SetRelativeLocation(FVector(-23.0f, 32.0f, 28.0f));
+    QuiverMesh->SetRelativeRotation(FRotator(18.0f, 0.0f, 0.0f));
+    QuiverMesh->SetRelativeScale3D(FVector(0.12f, 0.12f, 0.55f));
+    if (CylinderAsset.Succeeded())
+    {
+        QuiverMesh->SetStaticMesh(CylinderAsset.Object);
+    }
+
     if (BasicMaterial.Succeeded())
     {
         VisualMesh->SetMaterial(0, BasicMaterial.Object);
+        HeadMesh->SetMaterial(0, BasicMaterial.Object);
+        MantleMesh->SetMaterial(0, BasicMaterial.Object);
+        BowUpperMesh->SetMaterial(0, BasicMaterial.Object);
+        BowLowerMesh->SetMaterial(0, BasicMaterial.Object);
+        QuiverMesh->SetMaterial(0, BasicMaterial.Object);
     }
 
     CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
@@ -62,7 +123,13 @@ void AArashCharacter::BeginPlay()
     Super::BeginPlay();
 
     CurrentHealth = MaxHealth;
-    VisualMesh->SetVectorParameterValueOnMaterials(TEXT("Color"), FVector(0.02f, 0.28f, 0.34f));
+
+    VisualMesh->SetVectorParameterValueOnMaterials(TEXT("Color"), FVector(0.015f, 0.24f, 0.30f));
+    HeadMesh->SetVectorParameterValueOnMaterials(TEXT("Color"), FVector(0.62f, 0.40f, 0.22f));
+    MantleMesh->SetVectorParameterValueOnMaterials(TEXT("Color"), FVector(0.025f, 0.09f, 0.16f));
+    BowUpperMesh->SetVectorParameterValueOnMaterials(TEXT("Color"), FVector(0.88f, 0.55f, 0.12f));
+    BowLowerMesh->SetVectorParameterValueOnMaterials(TEXT("Color"), FVector(0.88f, 0.55f, 0.12f));
+    QuiverMesh->SetVectorParameterValueOnMaterials(TEXT("Color"), FVector(0.38f, 0.055f, 0.04f));
 
     if (APlayerController* PC = Cast<APlayerController>(GetController()))
     {
