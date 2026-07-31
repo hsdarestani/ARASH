@@ -54,6 +54,7 @@ protected:
 private:
     void SpawnPrototypeArena();
     void SpawnPersianCourtDetails();
+    void SpawnCinematicLights();
     AStaticMeshActor* SpawnArenaBlock(const FVector& Location, const FVector& Scale,
         const FVector& Color, bool bCollision);
     void StartWave();
