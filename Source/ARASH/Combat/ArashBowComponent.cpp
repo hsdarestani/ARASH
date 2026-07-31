@@ -14,7 +14,7 @@ UArashBowComponent::UArashBowComponent()
 
 void UArashBowComponent::StartCharge()
 {
-    if (!GetWorld())
+    if (!GetWorld() || ActiveArrow.IsValid())
     {
         return;
     }
@@ -25,7 +25,7 @@ void UArashBowComponent::StartCharge()
 
 float UArashBowComponent::GetChargeAlpha() const
 {
-    if (!bCharging || !GetWorld())
+    if (!bCharging || !GetWorld() || ActiveArrow.IsValid())
     {
         return 0.0f;
     }
@@ -37,7 +37,7 @@ AMythicArrowProjectile* UArashBowComponent::ReleaseArrow()
 {
     AActor* Owner = GetOwner();
     UWorld* World = GetWorld();
-    if (!Owner || !World || !ProjectileClass)
+    if (!Owner || !World || !ProjectileClass || ActiveArrow.IsValid())
     {
         bCharging = false;
         return nullptr;
@@ -60,6 +60,8 @@ AMythicArrowProjectile* UArashBowComponent::ReleaseArrow()
     {
         return nullptr;
     }
+
+    ActiveArrow = Arrow;
 
     if (const AArashCharacter* Player = Cast<AArashCharacter>(Owner))
     {
