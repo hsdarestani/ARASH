@@ -4,7 +4,16 @@
 #include "GameFramework/Character.h"
 #include "ArashEnemyBase.generated.h"
 
+class AEnemyBoltProjectile;
+class UStaticMesh;
 class UStaticMeshComponent;
+
+UENUM(BlueprintType)
+enum class EArashEnemyArchetype : uint8
+{
+    Raider UMETA(DisplayName = "Raider"),
+    Warden UMETA(DisplayName = "Warden")
+};
 
 UCLASS()
 class ARASH_API AArashEnemyBase : public ACharacter
@@ -19,10 +28,13 @@ public:
         AController* EventInstigator, AActor* DamageCauser) override;
 
     UFUNCTION(BlueprintCallable, Category = "Enemy")
-    void ConfigureForWave(int32 WaveNumber);
+    void ConfigureForWave(int32 WaveNumber, EArashEnemyArchetype NewArchetype);
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Prototype")
     TObjectPtr<UStaticMeshComponent> VisualMesh;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Enemy")
+    EArashEnemyArchetype Archetype = EArashEnemyArchetype::Raider;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
     float MaxHealth = 60.0f;
@@ -42,6 +54,15 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
     float AttackCooldown = 1.0f;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|Warden")
+    float PreferredRange = 650.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|Warden")
+    float RangedAttackCooldown = 1.85f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|Warden")
+    TSubclassOf<AEnemyBoltProjectile> ProjectileClass;
+
 protected:
     virtual void BeginPlay() override;
 
@@ -52,6 +73,16 @@ protected:
     void OnDeath();
 
 private:
+    void TickRaider(ACharacter* Player, const FVector& Direction, float DistanceToPlayer, float DeltaSeconds);
+    void TickWarden(ACharacter* Player, const FVector& Direction, float DistanceToPlayer, float DeltaSeconds);
+    void FireBoltAt(ACharacter* Player);
+
+    UPROPERTY()
+    TObjectPtr<UStaticMesh> RaiderMesh;
+
+    UPROPERTY()
+    TObjectPtr<UStaticMesh> WardenMesh;
+
     float LastAttackTime = -1000.0f;
     float HitFeedbackRemaining = 0.0f;
     bool bDead = false;
