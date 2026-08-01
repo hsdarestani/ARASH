@@ -284,17 +284,18 @@ void AArashEnvironmentManager::TuneLighting()
         return;
     }
 
-    // Lock the prototype out of the aggressively bright editor auto-exposure response.
-    UKismetSystemLibrary::ExecuteConsoleCommand(this, TEXT("r.EyeAdaptationQuality 0"));
+    // Keep exposure responsive enough to preserve readable shadows in the development preview.
+    UKismetSystemLibrary::ExecuteConsoleCommand(this, TEXT("r.EyeAdaptationQuality 2"));
     UKismetSystemLibrary::ExecuteConsoleCommand(this, TEXT("r.BloomQuality 4"));
 
     for (TActorIterator<ADirectionalLight> It(World); It; ++It)
     {
-        if (UDirectionalLightComponent* Light = It->GetDirectionalLightComponent())
+        if (UDirectionalLightComponent* Light = It->FindComponentByClass<UDirectionalLightComponent>())
         {
-            Light->SetIntensity(3.2f);
-            Light->SetLightColor(FLinearColor(1.0f, 0.58f, 0.36f));
-            Light->SetVolumetricScatteringIntensity(0.55f);
+            Light->SetIntensity(2.4f);
+            Light->SetLightColor(FLinearColor(1.0f, 0.64f, 0.42f));
+            Light->SetIndirectLightingIntensity(1.0f);
+            Light->SetVolumetricScatteringIntensity(0.35f);
         }
     }
 
@@ -302,7 +303,8 @@ void AArashEnvironmentManager::TuneLighting()
     {
         if (USkyLightComponent* Light = It->GetLightComponent())
         {
-            Light->SetIntensity(0.42f);
+            Light->SetIntensity(0.75f);
+            Light->SetLightColor(FLinearColor(0.70f, 0.78f, 1.0f));
         }
     }
 }
@@ -329,11 +331,11 @@ void AArashEnvironmentManager::SpawnFireLight(const FVector& Location)
 
     UPointLightComponent* Light = FireLight->PointLightComponent;
     Light->SetMobility(EComponentMobility::Movable);
-    Light->SetIntensity(720.0f);
-    Light->SetAttenuationRadius(360.0f);
-    Light->SetLightColor(FLinearColor(1.0f, 0.16f, 0.025f));
+    Light->SetIntensity(420.0f);
+    Light->SetAttenuationRadius(320.0f);
+    Light->SetLightColor(FLinearColor(1.0f, 0.22f, 0.055f));
     Light->SetCastShadows(false);
-    Light->SetVolumetricScatteringIntensity(0.55f);
+    Light->SetVolumetricScatteringIntensity(0.30f);
 }
 
 void AArashEnvironmentManager::BuildGeneratedArena()
