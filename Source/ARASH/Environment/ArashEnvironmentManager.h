@@ -5,7 +5,10 @@
 #include "ArashEnvironmentManager.generated.h"
 
 class AStaticMeshActor;
+class UMaterialInstanceDynamic;
+class UMaterialInterface;
 class UStaticMesh;
+class UStaticMeshComponent;
 
 UCLASS(NotBlueprintable)
 class ARASH_API AArashEnvironmentManager : public AActor
@@ -22,7 +25,10 @@ private:
     bool HasRequiredAssets() const;
     void BuildGeneratedArena();
     void HidePrototypeGeometry();
+    void TuneLighting();
     void SpawnFireLight(const FVector& Location);
+    void CreateAccentMaterials();
+    void ApplyMaterials(UStaticMeshComponent* MeshComponent, UStaticMesh* MeshAsset);
 
     AStaticMeshActor* SpawnGeneratedMesh(
         UStaticMesh* MeshAsset,
@@ -57,6 +63,33 @@ private:
 
     UPROPERTY()
     TObjectPtr<UStaticMesh> GateMesh;
+
+    UPROPERTY()
+    TObjectPtr<UMaterialInterface> BasicShapeMaterial;
+
+    UPROPERTY()
+    TObjectPtr<UMaterialInterface> CourtFloorMaterial;
+
+    UPROPERTY()
+    TObjectPtr<UMaterialInterface> CourtWallMaterial;
+
+    UPROPERTY()
+    TObjectPtr<UMaterialInterface> CourtStoneMaterial;
+
+    UPROPERTY()
+    TObjectPtr<UMaterialInterface> CourtMetalMaterial;
+
+    UPROPERTY(Transient)
+    TObjectPtr<UMaterialInstanceDynamic> GoldMaterial;
+
+    UPROPERTY(Transient)
+    TObjectPtr<UMaterialInstanceDynamic> TurquoiseMaterial;
+
+    UPROPERTY(Transient)
+    TObjectPtr<UMaterialInstanceDynamic> CrimsonMaterial;
+
+    UPROPERTY(Transient)
+    TObjectPtr<UMaterialInstanceDynamic> EmberMaterial;
 
     FVector ArenaCenter = FVector::ZeroVector;
 };
