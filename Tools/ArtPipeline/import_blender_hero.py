@@ -14,34 +14,10 @@ SOURCE_FBX = os.path.join(
     "ARASH_HeroKit.fbx",
 )
 DESTINATION = "/Game/Art/Generated/Character"
-BASIC_MATERIAL = "/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"
 
 
 def log(message: str) -> None:
     unreal.log(f"[ARASH Hero Import] {message}")
-
-
-def reset_materials(mesh: unreal.StaticMesh) -> None:
-    fallback = unreal.load_asset(BASIC_MATERIAL)
-    if fallback is None:
-        raise RuntimeError(f"Fallback material not found: {BASIC_MATERIAL}")
-
-    static_materials = list(mesh.get_editor_property("static_materials"))
-    for index in range(len(static_materials)):
-        mesh.set_material(index, fallback)
-    unreal.EditorAssetLibrary.save_loaded_asset(mesh, only_if_is_dirty=False)
-
-
-def remove_support_assets() -> None:
-    removed = 0
-    for path in unreal.EditorAssetLibrary.list_assets(DESTINATION, recursive=False, include_folder=False):
-        asset = unreal.load_asset(path)
-        if asset is None or isinstance(asset, unreal.StaticMesh):
-            continue
-        if unreal.EditorAssetLibrary.delete_asset(path):
-            removed += 1
-            log(f"Removed support asset {path}")
-    log(f"Removed {removed} generated support assets.")
 
 
 def main() -> None:
@@ -60,7 +36,7 @@ def main() -> None:
     options = unreal.FbxImportUI()
     options.import_mesh = True
     options.import_as_skeletal = False
-    options.import_materials = False
+    options.import_materials = True
     options.import_textures = False
     options.create_physics_asset = False
     options.static_mesh_import_data.combine_meshes = False
@@ -70,23 +46,27 @@ def main() -> None:
     options.static_mesh_import_data.convert_scene_unit = True
     task.options = options
 
-    log(f"Importing modular hero kit: {SOURCE_FBX}")
+    log(f"Importing modular hero kit with lightweight flat-color materials: {SOURCE_FBX}")
     unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
 
     meshes: list[unreal.StaticMesh] = []
+    materials = 0
     for path in task.imported_object_paths:
         asset = unreal.load_asset(path)
         if isinstance(asset, unreal.StaticMesh):
-            reset_materials(asset)
             meshes.append(asset)
             log(f"Imported mesh {path}")
+        elif isinstance(asset, unreal.MaterialInterface):
+            materials += 1
 
     if len(meshes) < 8:
         raise RuntimeError(f"Expected modular hero meshes, but Unreal imported only {len(meshes)}.")
 
-    remove_support_assets()
     unreal.EditorLoadingAndSavingUtils.save_dirty_packages(True, True)
-    log(f"Hero import complete: {len(meshes)} static meshes. Restart Unreal after rebuilding C++.")
+    log(
+        f"Hero import complete: {len(meshes)} static meshes and {materials} lightweight materials. "
+        "Restart Unreal after rebuilding C++."
+    )
 
 
 if __name__ == "__main__":
