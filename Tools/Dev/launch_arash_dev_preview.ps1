@@ -33,8 +33,16 @@ Write-Host "[ARASH Dev Preview] Project: $Project"
 Write-Host "[ARASH Dev Preview] Startup map: $Map"
 Write-Host "[ARASH Dev Preview] Applying low-VRAM development settings."
 
-& $Editor $Project $Map "-ExecCmds=$ExecCmds"
+$Arguments = @(
+    $Project,
+    $Map,
+    "-ExecCmds=$ExecCmds"
+)
 
-if ($LASTEXITCODE -ne 0) {
-    throw "Unreal Editor exited with code $LASTEXITCODE"
-}
+$Process = Start-Process `
+    -FilePath $Editor `
+    -ArgumentList $Arguments `
+    -WorkingDirectory $RepoRoot `
+    -PassThru
+
+Write-Host "[ARASH Dev Preview] Unreal Editor started successfully (PID $($Process.Id))."
