@@ -9,38 +9,65 @@ if (-not (Test-Path $Target)) {
 
 $Content = Get-Content -Path $Target -Raw
 $Original = $Content
-
-$Replacements = @(
-    @('r.EyeAdaptationQuality 0', 'r.EyeAdaptationQuality 2'),
-    @('Light->SetIntensity(3.2f);', 'Light->SetIntensity(4.0f);'),
-    @('Light->SetLightColor(FLinearColor(1.0f, 0.58f, 0.36f));', 'Light->SetLightColor(FLinearColor(1.0f, 0.72f, 0.52f));'),
-    @('Light->SetVolumetricScatteringIntensity(0.55f);', 'Light->SetVolumetricScatteringIntensity(0.35f);`r`n            Light->SetShadowAmount(0.68f);`r`n            Light->SetIndirectLightingIntensity(1.35f);'),
-    @('Light->SetIntensity(0.42f);', 'Light->SetIntensity(1.15f);'),
-    @('Light->SetIntensity(720.0f);', 'Light->SetIntensity(480.0f);'),
-    @('Light->SetAttenuationRadius(360.0f);', 'Light->SetAttenuationRadius(300.0f);')
-)
-
 $Applied = 0
-foreach ($Pair in $Replacements) {
-    $Old = $Pair[0]
-    $New = $Pair[1]
 
-    if ($Content.Contains($Old)) {
-        $Content = $Content.Replace($Old, $New)
-        $Applied++
+function Replace-Required {
+    param(
+        [string]$Old,
+        [string]$New,
+        [string]$Label
+    )
+
+    if ($script:Content.Contains($Old)) {
+        $script:Content = $script:Content.Replace($Old, $New)
+        $script:Applied++
+        Write-Host "[ARASH] Patched $Label"
     }
 }
 
-$LoopOld = "for (TActorIterator<ADirectionalLight> It(World); It; ++It)`r`n    {`r`n        if (UDirectionalLightComponent* Light ="
-$LoopNew = "for (TActorIterator<ADirectionalLight> It(World); It; ++It)`r`n    {`r`n        It->SetActorRotation(FRotator(-48.0f, -32.0f, 0.0f));`r`n`r`n        if (UDirectionalLightComponent* Light ="
+Replace-Required `
+    'r.EyeAdaptationQuality 0' `
+    'r.EyeAdaptationQuality 2' `
+    'eye adaptation'
 
-if ($Content.Contains($LoopOld) -and -not $Content.Contains('It->SetActorRotation(FRotator(-48.0f, -32.0f, 0.0f));')) {
-    $Content = $Content.Replace($LoopOld, $LoopNew)
-    $Applied++
-}
+$DirectionalOld = @"
+            Light->SetIntensity(3.2f);
+            Light->SetLightColor(FLinearColor(1.0f, 0.58f, 0.36f));
+            Light->SetVolumetricScatteringIntensity(0.55f);
+"@
+
+$DirectionalNew = @"
+            Light->SetIntensity(4.0f);
+            Light->SetLightColor(FLinearColor(1.0f, 0.72f, 0.52f));
+            Light->SetVolumetricScatteringIntensity(0.35f);
+            Light->SetShadowAmount(0.68f);
+            Light->SetIndirectLightingIntensity(1.35f);
+"@
+
+Replace-Required $DirectionalOld $DirectionalNew 'directional-light balance'
+
+Replace-Required `
+    'Light->SetIntensity(0.42f);' `
+    'Light->SetIntensity(1.15f);' `
+    'skylight fill'
+
+Replace-Required `
+    'Light->SetIntensity(720.0f);' `
+    'Light->SetIntensity(480.0f);' `
+    'brazier intensity'
+
+Replace-Required `
+    'Light->SetAttenuationRadius(360.0f);' `
+    'Light->SetAttenuationRadius(300.0f);' `
+    'brazier radius'
 
 if ($Content -eq $Original) {
-    if ($Content.Contains('r.EyeAdaptationQuality 2') -and $Content.Contains('Light->SetIntensity(1.15f);')) {
+    if (
+        $Content.Contains('r.EyeAdaptationQuality 2') -and
+        $Content.Contains('Light->SetIntensity(4.0f);') -and
+        $Content.Contains('Light->SetIntensity(1.15f);') -and
+        $Content.Contains('Light->SetShadowAmount(0.68f);')
+    ) {
         Write-Host "[ARASH] Environment lighting v2 is already applied."
         exit 0
     }
@@ -56,7 +83,8 @@ $Required = @(
     'r.EyeAdaptationQuality 2',
     'Light->SetIntensity(4.0f);',
     'Light->SetIntensity(1.15f);',
-    'Light->SetShadowAmount(0.68f);'
+    'Light->SetShadowAmount(0.68f);',
+    'Light->SetIndirectLightingIntensity(1.35f);'
 )
 
 foreach ($Pattern in $Required) {
@@ -67,4 +95,4 @@ foreach ($Pattern in $Required) {
 
 Write-Host "[ARASH] Applied environment lighting v2 ($Applied changes):"
 Write-Host $Target
-Write-Host "[ARASH] Eye adaptation restored, skylight raised, shadow density reduced, and sun angle normalized."
+Write-Host "[ARASH] Auto exposure restored, skylight raised, and shadows softened."
