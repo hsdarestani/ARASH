@@ -1,12 +1,19 @@
 #include "Environment/ArashEnvironmentManager.h"
 
+#include "Components/DirectionalLightComponent.h"
 #include "Components/PointLightComponent.h"
+#include "Components/SkyLightComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Engine/DirectionalLight.h"
 #include "Engine/PointLight.h"
+#include "Engine/SkyLight.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/StaticMeshActor.h"
 #include "EngineUtils.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "Materials/MaterialInterface.h"
 #include "TimerManager.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -49,6 +56,23 @@ AArashEnvironmentManager::AArashEnvironmentManager()
     BrokenColumnMesh = BrokenColumnAsset.Object;
     RubbleMesh = RubbleAsset.Object;
     GateMesh = GateAsset.Object;
+
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> BasicMaterial(
+        TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> FloorMaterial(
+        TEXT("/Game/Art/CC0/PolyHaven/marble_01/M_marble_01.M_marble_01"));
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> WallMaterial(
+        TEXT("/Game/Art/CC0/PolyHaven/red_sandstone_wall/M_red_sandstone_wall.M_red_sandstone_wall"));
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> StoneMaterial(
+        TEXT("/Game/Art/CC0/PolyHaven/sandstone_blocks_05/M_sandstone_blocks_05.M_sandstone_blocks_05"));
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> MetalMaterial(
+        TEXT("/Game/Art/CC0/PolyHaven/metal_plate_02/M_metal_plate_02.M_metal_plate_02"));
+
+    BasicShapeMaterial = BasicMaterial.Object;
+    CourtFloorMaterial = FloorMaterial.Object;
+    CourtWallMaterial = WallMaterial.Object;
+    CourtStoneMaterial = StoneMaterial.Object;
+    CourtMetalMaterial = MetalMaterial.Object;
 }
 
 void AArashEnvironmentManager::BeginPlay()
@@ -62,12 +86,105 @@ void AArashEnvironmentManager::BeginPlay()
         return;
     }
 
+    CreateAccentMaterials();
+    TuneLighting();
     GetWorldTimerManager().SetTimerForNextTick(this, &AArashEnvironmentManager::BuildGeneratedArena);
 }
 
 bool AArashEnvironmentManager::HasRequiredAssets() const
 {
     return FloorTileMesh && FloorMedallionMesh && WallMesh && PillarMesh && BrazierMesh;
+}
+
+void AArashEnvironmentManager::CreateAccentMaterials()
+{
+    if (!BasicShapeMaterial)
+    {
+        return;
+    }
+
+    GoldMaterial = UMaterialInstanceDynamic::Create(BasicShapeMaterial, this);
+    TurquoiseMaterial = UMaterialInstanceDynamic::Create(BasicShapeMaterial, this);
+    CrimsonMaterial = UMaterialInstanceDynamic::Create(BasicShapeMaterial, this);
+    EmberMaterial = UMaterialInstanceDynamic::Create(BasicShapeMaterial, this);
+
+    if (GoldMaterial)
+    {
+        GoldMaterial->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.62f, 0.24f, 0.025f));
+    }
+    if (TurquoiseMaterial)
+    {
+        TurquoiseMaterial->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.015f, 0.18f, 0.21f));
+    }
+    if (CrimsonMaterial)
+    {
+        CrimsonMaterial->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.16f, 0.006f, 0.012f));
+    }
+    if (EmberMaterial)
+    {
+        EmberMaterial->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.90f, 0.055f, 0.005f));
+    }
+}
+
+void AArashEnvironmentManager::ApplyMaterials(UStaticMeshComponent* MeshComponent, UStaticMesh* MeshAsset)
+{
+    if (!MeshComponent || !MeshAsset)
+    {
+        return;
+    }
+
+    const TArray<FName> SlotNames = MeshComponent->GetMaterialSlotNames();
+    for (int32 Index = 0; Index < SlotNames.Num(); ++Index)
+    {
+        const FString Slot = SlotNames[Index].ToString();
+        UMaterialInterface* Selected = BasicShapeMaterial.Get();
+
+        // Repeated floor tiles stay restrained. Their decorative geometry is deliberately
+        // rendered as stone so the central medallion and combat silhouettes remain readable.
+        if (MeshAsset == FloorTileMesh.Get())
+        {
+            Selected = Slot.Contains(TEXT("Floor"), ESearchCase::IgnoreCase)
+                ? CourtFloorMaterial.Get()
+                : CourtStoneMaterial.Get();
+        }
+        else if (Slot.Contains(TEXT("Floor"), ESearchCase::IgnoreCase))
+        {
+            Selected = CourtFloorMaterial.Get();
+        }
+        else if (Slot.Contains(TEXT("Wall"), ESearchCase::IgnoreCase))
+        {
+            Selected = CourtWallMaterial.Get();
+        }
+        else if (Slot.Contains(TEXT("Stone"), ESearchCase::IgnoreCase))
+        {
+            Selected = CourtStoneMaterial.Get();
+        }
+        else if (Slot.Contains(TEXT("Metal"), ESearchCase::IgnoreCase))
+        {
+            Selected = CourtMetalMaterial.Get();
+        }
+        else if (Slot.Contains(TEXT("Gold"), ESearchCase::IgnoreCase))
+        {
+            Selected = GoldMaterial.Get();
+        }
+        else if (Slot.Contains(TEXT("Turquoise"), ESearchCase::IgnoreCase))
+        {
+            Selected = TurquoiseMaterial.Get();
+        }
+        else if (Slot.Contains(TEXT("Crimson"), ESearchCase::IgnoreCase))
+        {
+            Selected = CrimsonMaterial.Get();
+        }
+        else if (Slot.Contains(TEXT("Emissive"), ESearchCase::IgnoreCase))
+        {
+            Selected = EmberMaterial.Get();
+        }
+
+        if (Selected)
+        {
+            MeshComponent->SetMaterial(Index, Selected);
+        }
+    }
 }
 
 AStaticMeshActor* AArashEnvironmentManager::SpawnGeneratedMesh(
@@ -103,6 +220,7 @@ AStaticMeshActor* AArashEnvironmentManager::SpawnGeneratedMesh(
     Mesh->SetCollisionEnabled(bCollision ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
     Mesh->SetGenerateOverlapEvents(false);
     Mesh->SetCastShadow(true);
+    ApplyMaterials(Mesh, MeshAsset);
 
     return Actor;
 }
@@ -158,6 +276,37 @@ void AArashEnvironmentManager::HidePrototypeGeometry()
     }
 }
 
+void AArashEnvironmentManager::TuneLighting()
+{
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        return;
+    }
+
+    // Lock the prototype out of the aggressively bright editor auto-exposure response.
+    UKismetSystemLibrary::ExecuteConsoleCommand(this, TEXT("r.EyeAdaptationQuality 0"));
+    UKismetSystemLibrary::ExecuteConsoleCommand(this, TEXT("r.BloomQuality 4"));
+
+    for (TActorIterator<ADirectionalLight> It(World); It; ++It)
+    {
+        if (UDirectionalLightComponent* Light = It->GetDirectionalLightComponent())
+        {
+            Light->SetIntensity(3.2f);
+            Light->SetLightColor(FLinearColor(1.0f, 0.58f, 0.36f));
+            Light->SetVolumetricScatteringIntensity(0.55f);
+        }
+    }
+
+    for (TActorIterator<ASkyLight> It(World); It; ++It)
+    {
+        if (USkyLightComponent* Light = It->GetLightComponent())
+        {
+            Light->SetIntensity(0.42f);
+        }
+    }
+}
+
 void AArashEnvironmentManager::SpawnFireLight(const FVector& Location)
 {
     UWorld* World = GetWorld();
@@ -180,11 +329,11 @@ void AArashEnvironmentManager::SpawnFireLight(const FVector& Location)
 
     UPointLightComponent* Light = FireLight->PointLightComponent;
     Light->SetMobility(EComponentMobility::Movable);
-    Light->SetIntensity(2600.0f);
-    Light->SetAttenuationRadius(520.0f);
-    Light->SetLightColor(FLinearColor(1.0f, 0.18f, 0.025f));
+    Light->SetIntensity(720.0f);
+    Light->SetAttenuationRadius(360.0f);
+    Light->SetLightColor(FLinearColor(1.0f, 0.16f, 0.025f));
     Light->SetCastShadows(false);
-    Light->SetVolumetricScatteringIntensity(1.5f);
+    Light->SetVolumetricScatteringIntensity(0.55f);
 }
 
 void AArashEnvironmentManager::BuildGeneratedArena()
@@ -222,63 +371,46 @@ void AArashEnvironmentManager::BuildGeneratedArena()
         FloorMedallionMesh,
         ArenaCenter + FVector(0.0f, 0.0f, 4.0f),
         FRotator::ZeroRotator,
-        false);
+        false,
+        FVector(1.18f));
 
     for (int32 Segment = -GridRadius; Segment <= GridRadius; ++Segment)
     {
         const float Along = Segment * TileStep;
 
-        SpawnGeneratedMesh(
-            WallMesh,
-            ArenaCenter + FVector(Along, WallOffset, 0.0f),
-            FRotator::ZeroRotator,
-            true);
+        SpawnGeneratedMesh(WallMesh, ArenaCenter + FVector(Along, WallOffset, 0.0f),
+            FRotator::ZeroRotator, true);
 
         if (Segment != 0 || !GateMesh)
         {
-            SpawnGeneratedMesh(
-                WallMesh,
-                ArenaCenter + FVector(Along, -WallOffset, 0.0f),
-                FRotator(0.0f, 180.0f, 0.0f),
-                true);
+            SpawnGeneratedMesh(WallMesh, ArenaCenter + FVector(Along, -WallOffset, 0.0f),
+                FRotator(0.0f, 180.0f, 0.0f), true);
         }
 
-        SpawnGeneratedMesh(
-            WallMesh,
-            ArenaCenter + FVector(WallOffset, Along, 0.0f),
-            FRotator(0.0f, -90.0f, 0.0f),
-            true);
-
-        SpawnGeneratedMesh(
-            WallMesh,
-            ArenaCenter + FVector(-WallOffset, Along, 0.0f),
-            FRotator(0.0f, 90.0f, 0.0f),
-            true);
+        SpawnGeneratedMesh(WallMesh, ArenaCenter + FVector(WallOffset, Along, 0.0f),
+            FRotator(0.0f, -90.0f, 0.0f), true);
+        SpawnGeneratedMesh(WallMesh, ArenaCenter + FVector(-WallOffset, Along, 0.0f),
+            FRotator(0.0f, 90.0f, 0.0f), true);
     }
 
     if (GateMesh)
     {
-        SpawnGeneratedMesh(
-            GateMesh,
-            ArenaCenter + FVector(0.0f, -WallOffset, 0.0f),
-            FRotator(0.0f, 180.0f, 0.0f),
-            true);
+        SpawnGeneratedMesh(GateMesh, ArenaCenter + FVector(0.0f, -WallOffset, 0.0f),
+            FRotator(0.0f, 180.0f, 0.0f), true);
     }
 
-    constexpr float PillarOffset = 1180.0f;
+    constexpr float PillarOffset = 1200.0f;
     for (int32 XSign : {-1, 1})
     {
         for (int32 YSign : {-1, 1})
         {
-            SpawnGeneratedMesh(
-                PillarMesh,
+            SpawnGeneratedMesh(PillarMesh,
                 ArenaCenter + FVector(PillarOffset * XSign, PillarOffset * YSign, 0.0f),
-                FRotator::ZeroRotator,
-                true);
+                FRotator::ZeroRotator, true, FVector(0.92f));
         }
     }
 
-    constexpr float BrazierOffset = 980.0f;
+    constexpr float BrazierOffset = 1050.0f;
     for (int32 XSign : {-1, 1})
     {
         for (int32 YSign : {-1, 1})
@@ -288,67 +420,53 @@ void AArashEnvironmentManager::BuildGeneratedArena()
                 BrazierOffset * YSign,
                 0.0f);
 
-            SpawnGeneratedMesh(BrazierMesh, BrazierLocation, FRotator::ZeroRotator, false);
-            SpawnFireLight(BrazierLocation + FVector(0.0f, 0.0f, 165.0f));
+            SpawnGeneratedMesh(BrazierMesh, BrazierLocation, FRotator::ZeroRotator,
+                false, FVector(0.68f));
+            SpawnFireLight(BrazierLocation + FVector(0.0f, 0.0f, 115.0f));
         }
     }
 
     if (BannerMesh)
     {
-        SpawnGeneratedMesh(
-            BannerMesh,
-            ArenaCenter + FVector(-820.0f, WallOffset - 42.0f, 22.0f),
-            FRotator(0.0f, 180.0f, 0.0f),
-            false,
-            FVector(0.92f));
-
-        SpawnGeneratedMesh(
-            BannerMesh,
-            ArenaCenter + FVector(820.0f, WallOffset - 42.0f, 22.0f),
-            FRotator(0.0f, 180.0f, 0.0f),
-            false,
-            FVector(0.92f));
+        SpawnGeneratedMesh(BannerMesh,
+            ArenaCenter + FVector(-760.0f, WallOffset - 44.0f, 36.0f),
+            FRotator(0.0f, 180.0f, 0.0f), false, FVector(0.82f));
+        SpawnGeneratedMesh(BannerMesh,
+            ArenaCenter + FVector(760.0f, WallOffset - 44.0f, 36.0f),
+            FRotator(0.0f, 180.0f, 0.0f), false, FVector(0.82f));
     }
 
     if (BrokenColumnMesh)
     {
-        SpawnGeneratedMesh(
-            BrokenColumnMesh,
-            ArenaCenter + FVector(1700.0f, -930.0f, 0.0f),
-            FRotator(0.0f, 24.0f, 0.0f),
-            false);
-
-        SpawnGeneratedMesh(
-            BrokenColumnMesh,
-            ArenaCenter + FVector(-1720.0f, 960.0f, 0.0f),
-            FRotator(0.0f, -32.0f, 0.0f),
-            false,
-            FVector(0.82f));
+        SpawnGeneratedMesh(BrokenColumnMesh,
+            ArenaCenter + FVector(1680.0f, -920.0f, 0.0f),
+            FRotator(0.0f, 24.0f, 0.0f), false, FVector(0.86f));
+        SpawnGeneratedMesh(BrokenColumnMesh,
+            ArenaCenter + FVector(-1700.0f, 950.0f, 0.0f),
+            FRotator(0.0f, -32.0f, 0.0f), false, FVector(0.72f));
     }
 
     if (RubbleMesh)
     {
         const FVector RubbleOffsets[] =
         {
-            FVector(1640.0f, 1050.0f, 0.0f),
-            FVector(-1640.0f, -1020.0f, 0.0f),
-            FVector(930.0f, -1660.0f, 0.0f),
-            FVector(-980.0f, 1660.0f, 0.0f)
+            FVector(1620.0f, 1040.0f, 0.0f),
+            FVector(-1620.0f, -1010.0f, 0.0f),
+            FVector(920.0f, -1640.0f, 0.0f),
+            FVector(-970.0f, 1640.0f, 0.0f)
         };
-
         const float RubbleRotations[] = { 12.0f, -27.0f, 48.0f, -18.0f };
 
         for (int32 Index = 0; Index < UE_ARRAY_COUNT(RubbleOffsets); ++Index)
         {
-            SpawnGeneratedMesh(
-                RubbleMesh,
+            SpawnGeneratedMesh(RubbleMesh,
                 ArenaCenter + RubbleOffsets[Index],
                 FRotator(0.0f, RubbleRotations[Index], 0.0f),
                 false,
-                FVector(0.78f + Index * 0.06f));
+                FVector(0.68f + Index * 0.05f));
         }
     }
 
     UE_LOG(LogTemp, Display,
-        TEXT("[ARASH Environment] Blender environment kit assembled successfully."));
+        TEXT("[ARASH Environment] Blender kit assembled with optimized materials and lighting."));
 }
