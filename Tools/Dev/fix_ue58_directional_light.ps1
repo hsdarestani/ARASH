@@ -22,7 +22,8 @@ if (-not $Content.Contains($Old)) {
 }
 
 $Updated = $Content.Replace($Old, $New)
-Set-Content -Path $Target -Value $Updated -Encoding utf8NoBOM
+$Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllText($Target, $Updated, $Utf8NoBom)
 
 $Verify = Get-Content -Path $Target -Raw
 if (-not $Verify.Contains($New) -or $Verify.Contains($Old)) {
