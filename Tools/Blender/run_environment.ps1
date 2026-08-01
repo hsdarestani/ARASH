@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
-$Generator = Join-Path $PSScriptRoot "generate_arash_environment.py"
+$Generator = Join-Path $PSScriptRoot "run_compatible_environment.py"
 
 $Candidates = @()
 
@@ -26,7 +26,7 @@ Write-Host "[ARASH] Blender: $BlenderExe"
 Write-Host "[ARASH] Generator: $Generator"
 Write-Host "[ARASH] This may take several minutes on the first run."
 
-& $BlenderExe --background --python $Generator
+& $BlenderExe --background --python-exit-code 1 --python $Generator
 if ($LASTEXITCODE -ne 0) {
     throw "Blender environment generation failed with exit code $LASTEXITCODE"
 }
