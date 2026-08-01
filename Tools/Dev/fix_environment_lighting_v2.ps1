@@ -30,21 +30,23 @@ Replace-Required `
     'r.EyeAdaptationQuality 2' `
     'eye adaptation'
 
-$DirectionalOld = @"
-            Light->SetIntensity(3.2f);
-            Light->SetLightColor(FLinearColor(1.0f, 0.58f, 0.36f));
-            Light->SetVolumetricScatteringIntensity(0.55f);
-"@
+$DirectionalPattern = [regex]::Escape('Light->SetIntensity(3.2f);') + '\s*' +
+    [regex]::Escape('Light->SetLightColor(FLinearColor(1.0f, 0.58f, 0.36f));') + '\s*' +
+    [regex]::Escape('Light->SetVolumetricScatteringIntensity(0.55f);')
 
 $DirectionalNew = @"
-            Light->SetIntensity(4.0f);
+Light->SetIntensity(4.0f);
             Light->SetLightColor(FLinearColor(1.0f, 0.72f, 0.52f));
             Light->SetVolumetricScatteringIntensity(0.35f);
             Light->SetShadowAmount(0.68f);
             Light->SetIndirectLightingIntensity(1.35f);
 "@
 
-Replace-Required $DirectionalOld $DirectionalNew 'directional-light balance'
+if ([regex]::IsMatch($Content, $DirectionalPattern)) {
+    $Content = [regex]::Replace($Content, $DirectionalPattern, $DirectionalNew, 1)
+    $Applied++
+    Write-Host "[ARASH] Patched directional-light balance"
+}
 
 Replace-Required `
     'Light->SetIntensity(0.42f);' `
