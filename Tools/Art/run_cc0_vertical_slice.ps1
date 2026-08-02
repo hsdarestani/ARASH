@@ -1,0 +1,82 @@
+param(
+    [string]$UnrealRoot = "D:\UE_5.8",
+    [switch]$ForceDownload,
+    [switch]$SkipLaunch
+)
+
+$ErrorActionPreference = "Stop"
+
+$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+$Project = Join-Path $RepoRoot "ARASH.uproject"
+$Installer = Join-Path $PSScriptRoot "install_cc0_vertical_slice.ps1"
+$PythonScript = Join-Path $RepoRoot "Content\Python\import_cc0_vertical_slice.py"
+$EditorCmd = Join-Path $UnrealRoot "Engine\Binaries\Win64\UnrealEditor-Cmd.exe"
+$Editor = Join-Path $UnrealRoot "Engine\Binaries\Win64\UnrealEditor.exe"
+$Map = "/Game/Maps/PrototypeArena/NewMap"
+
+foreach ($RequiredPath in @($Project, $Installer, $PythonScript, $EditorCmd)) {
+    if (-not (Test-Path $RequiredPath)) {
+        throw "Required path not found: $RequiredPath"
+    }
+}
+
+Write-Host "[ARASH CC0] Step 1/3 - Preparing pinned CC0 source assets."
+& $Installer -Force:$ForceDownload
+
+Write-Host "[ARASH CC0] Step 2/3 - Importing and verifying assets in Unreal Engine."
+$ImportArguments = @(
+    $Project,
+    "-ExecutePythonScript=$PythonScript",
+    "-unattended",
+    "-nop4",
+    "-nosplash",
+    "-NoSound",
+    "-NoSplash",
+    "-NullRHI"
+)
+
+& $EditorCmd @ImportArguments
+if ($LASTEXITCODE -ne 0) {
+    throw "Unreal CC0 import failed with exit code $LASTEXITCODE"
+}
+
+Write-Host "[ARASH CC0] Import verification passed."
+
+if ($SkipLaunch) {
+    Write-Host "[ARASH CC0] Step 3/3 - Launch skipped by request."
+    exit 0
+}
+
+if (-not (Test-Path $Editor)) {
+    throw "Unreal Editor not found: $Editor"
+}
+
+Write-Host "[ARASH CC0] Step 3/3 - Opening the playable prototype arena."
+$ExecCmds = @(
+    "r.Streaming.LimitPoolSizeToVRAM 1",
+    "r.Streaming.PoolSize 560",
+    "r.Streaming.MipBias 1.25",
+    "r.TextureStreaming 1",
+    "r.Shadow.Virtual.Enable 0",
+    "sg.TextureQuality 2",
+    "sg.ShadowQuality 2",
+    "sg.GlobalIlluminationQuality 2",
+    "sg.ReflectionQuality 2",
+    "sg.EffectsQuality 2",
+    "r.ScreenPercentage 72"
+) -join ","
+
+$LaunchArguments = @(
+    $Project,
+    $Map,
+    "-ExecCmds=$ExecCmds"
+)
+
+$Process = Start-Process `
+    -FilePath $Editor `
+    -ArgumentList $LaunchArguments `
+    -WorkingDirectory $RepoRoot `
+    -PassThru
+
+Write-Host "[ARASH CC0] Unreal Editor started (PID $($Process.Id))."
+Write-Host "[ARASH CC0] Press Play in PrototypeArena to test the imported environment."
