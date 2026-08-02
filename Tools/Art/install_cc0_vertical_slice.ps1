@@ -40,7 +40,7 @@ function Find-KayKitFbxDirectory([string]$SearchRoot) {
 function Invoke-Git([string[]]$Arguments) {
     & git @Arguments
     if ($LASTEXITCODE -ne 0) {
-        throw "git command failed with exit code $LASTEXITCODE: git $($Arguments -join ' ')"
+        throw "git command failed with exit code ${LASTEXITCODE}: git $($Arguments -join ' ')"
     }
 }
 
