@@ -4,6 +4,9 @@ on:
   pull_request:
     paths:
       - "Tools/Art/**"
+      - "Tools/Blender/**"
+      - "Tools/Dev/integrate_generated_hero.ps1"
+      - "Tools/ArtPipeline/import_blender_hero.py"
       - "Content/Python/import_cc0_vertical_slice.py"
       - ".github/workflows/validate-cc0-art.yml"
   push:
@@ -11,6 +14,9 @@ on:
       - "agent/cc0-art-bootstrap"
     paths:
       - "Tools/Art/**"
+      - "Tools/Blender/**"
+      - "Tools/Dev/integrate_generated_hero.ps1"
+      - "Tools/ArtPipeline/import_blender_hero.py"
       - "Content/Python/import_cc0_vertical_slice.py"
       - ".github/workflows/validate-cc0-art.yml"
 
@@ -29,14 +35,17 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Validate manifest and importer
-        run: python Tools/Art/validate_cc0_bootstrap.py
+      - name: Validate manifest and importers
+        run: |
+          python Tools/Art/validate_cc0_bootstrap.py
+          python -m py_compile Tools/Blender/generate_arash_hero.py
+          python -m py_compile Tools/ArtPipeline/import_blender_hero.py
 
       - name: Parse PowerShell scripts
         shell: pwsh
         run: |
           $Failed = $false
-          Get-ChildItem Tools/Art -Filter *.ps1 | ForEach-Object {
+          Get-ChildItem Tools -Filter *.ps1 -File -Recurse | ForEach-Object {
             $Tokens = $null
             $Errors = $null
             [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$Tokens, [ref]$Errors) | Out-Null
