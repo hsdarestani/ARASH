@@ -2,7 +2,8 @@ param(
     [string]$UnrealRoot = "D:\UE_5.8",
     [switch]$ForceDownload,
     [switch]$SkipLaunch,
-    [switch]$SkipBuild
+    [switch]$SkipBuild,
+    [switch]$UseDx12
 )
 
 $ErrorActionPreference = "Stop"
@@ -10,26 +11,30 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $Project = Join-Path $RepoRoot "ARASH.uproject"
 $Installer = Join-Path $PSScriptRoot "install_cc0_vertical_slice.ps1"
+$VisualTune = Join-Path $PSScriptRoot "apply_cc0_visual_tune.ps1"
 $PythonScript = Join-Path $RepoRoot "Content\Python\import_cc0_vertical_slice.py"
 $BuildScript = Join-Path $UnrealRoot "Engine\Build\BatchFiles\Build.bat"
 $EditorCmd = Join-Path $UnrealRoot "Engine\Binaries\Win64\UnrealEditor-Cmd.exe"
 $Editor = Join-Path $UnrealRoot "Engine\Binaries\Win64\UnrealEditor.exe"
 $Map = "/Game/Maps/PrototypeArena/NewMap"
 
-foreach ($RequiredPath in @($Project, $Installer, $PythonScript, $BuildScript, $EditorCmd)) {
+foreach ($RequiredPath in @($Project, $Installer, $VisualTune, $PythonScript, $BuildScript, $EditorCmd)) {
     if (-not (Test-Path $RequiredPath)) {
         throw "Required path not found: $RequiredPath"
     }
 }
 
-Write-Host "[ARASH CC0] Step 1/4 - Preparing pinned CC0 source assets."
+Write-Host "[ARASH CC0] Step 1/5 - Preparing pinned CC0 source assets."
 & $Installer -Force:$ForceDownload
 
+Write-Host "[ARASH CC0] Step 2/5 - Applying Persian palette and low-VRAM runtime tune."
+& $VisualTune
+
 if ($SkipBuild) {
-    Write-Host "[ARASH CC0] Step 2/4 - Win64 editor build skipped by request."
+    Write-Host "[ARASH CC0] Step 3/5 - Win64 editor build skipped by request."
 }
 else {
-    Write-Host "[ARASH CC0] Step 2/4 - Building ARASHEditor for Win64 Development."
+    Write-Host "[ARASH CC0] Step 3/5 - Building ARASHEditor for Win64 Development."
     $BuildArguments = @(
         "ARASHEditor",
         "Win64",
@@ -47,7 +52,7 @@ else {
     Write-Host "[ARASH CC0] Win64 editor build passed."
 }
 
-Write-Host "[ARASH CC0] Step 3/4 - Importing and verifying assets in Unreal Engine."
+Write-Host "[ARASH CC0] Step 4/5 - Importing and verifying assets in Unreal Engine."
 $ImportArguments = @(
     $Project,
     "-ExecutePythonScript=$PythonScript",
@@ -67,7 +72,7 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "[ARASH CC0] Import verification passed."
 
 if ($SkipLaunch) {
-    Write-Host "[ARASH CC0] Step 4/4 - Launch skipped by request."
+    Write-Host "[ARASH CC0] Step 5/5 - Launch skipped by request."
     exit 0
 }
 
@@ -75,19 +80,24 @@ if (-not (Test-Path $Editor)) {
     throw "Unreal Editor not found: $Editor"
 }
 
-Write-Host "[ARASH CC0] Step 4/4 - Opening the playable prototype arena."
+Write-Host "[ARASH CC0] Step 5/5 - Opening the playable prototype arena."
 $ExecCmds = @(
     "r.Streaming.LimitPoolSizeToVRAM 1",
-    "r.Streaming.PoolSize 560",
-    "r.Streaming.MipBias 1.25",
+    "r.Streaming.PoolSize 320",
+    "r.Streaming.MipBias 2.0",
+    "r.Streaming.MaxEffectiveScreenSize 1024",
     "r.TextureStreaming 1",
     "r.Shadow.Virtual.Enable 0",
-    "sg.TextureQuality 2",
-    "sg.ShadowQuality 2",
-    "sg.GlobalIlluminationQuality 2",
-    "sg.ReflectionQuality 2",
-    "sg.EffectsQuality 2",
-    "r.ScreenPercentage 72"
+    "r.VolumetricFog 0",
+    "r.DynamicGlobalIlluminationMethod 0",
+    "r.ReflectionMethod 0",
+    "r.Nanite 0",
+    "sg.TextureQuality 1",
+    "sg.ShadowQuality 1",
+    "sg.GlobalIlluminationQuality 1",
+    "sg.ReflectionQuality 1",
+    "sg.EffectsQuality 1",
+    "r.ScreenPercentage 60"
 ) -join ","
 
 $LaunchArguments = @(
@@ -96,6 +106,10 @@ $LaunchArguments = @(
     "-SkipCompile",
     "-ExecCmds=$ExecCmds"
 )
+
+if (-not $UseDx12) {
+    $LaunchArguments += "-d3d11"
+}
 
 $Process = Start-Process `
     -FilePath $Editor `
