@@ -16,10 +16,33 @@ $Manifest = Get-Content -Path $ManifestPath -Raw | ConvertFrom-Json
 $CacheRoot = Join-Path $RepoRoot ".art-cache\kaykit-dungeon-remastered"
 $ArchivePath = Join-Path $CacheRoot "source.zip"
 $ExtractRoot = Join-Path $CacheRoot "source"
+$GitSourceRoot = Join-Path $CacheRoot "git-source"
 $StagingRoot = Join-Path $RepoRoot ($Manifest.staging_root -replace '/', '\')
 $StagingAssets = Join-Path $StagingRoot "Assets"
 $StagingFbx = Join-Path $StagingAssets "fbx"
 $StampPath = Join-Path $StagingRoot "INSTALL.json"
+
+function Find-KayKitFbxDirectory([string]$SearchRoot) {
+    if (-not (Test-Path $SearchRoot)) {
+        return $null
+    }
+
+    $Sentinel = Get-ChildItem -Path $SearchRoot -File -Recurse -Filter "floor_tile_large.fbx" -ErrorAction SilentlyContinue |
+        Select-Object -First 1
+
+    if ($Sentinel) {
+        return $Sentinel.Directory
+    }
+
+    return $null
+}
+
+function Invoke-Git([string[]]$Arguments) {
+    & git @Arguments
+    if ($LASTEXITCODE -ne 0) {
+        throw "git command failed with exit code $LASTEXITCODE: git $($Arguments -join ' ')"
+    }
+}
 
 if ($Force) {
     if (Test-Path $CacheRoot) {
@@ -46,25 +69,57 @@ if (-not (Test-Path $ExtractRoot)) {
     Expand-Archive -Path $ArchivePath -DestinationPath $ExtractRoot -Force
 }
 
-$AssetRootSuffix = ($Manifest.source.asset_root -replace '/', '\')
-$AssetRoot = Get-ChildItem -Path $ExtractRoot -Directory -Recurse |
-    Where-Object { $_.FullName.EndsWith($AssetRootSuffix, [System.StringComparison]::OrdinalIgnoreCase) } |
-    Select-Object -First 1
+# GitHub source archives do not always contain Git LFS payloads. First try to
+# locate the real FBX payload in the extracted archive without assuming the
+# archive's root-directory name or exact casing.
+$SourceFbx = Find-KayKitFbxDirectory $ExtractRoot
 
-if (-not $AssetRoot) {
-    throw "Could not locate KayKit asset root '$AssetRootSuffix' in extracted archive."
+if (-not $SourceFbx) {
+    Write-Warning "[ARASH CC0] FBX payload was not present in the GitHub source archive; using a pinned Git LFS checkout."
+
+    if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+        throw "Git is required for the KayKit LFS fallback, but git.exe was not found in PATH."
+    }
+
+    if (-not (Test-Path (Join-Path $GitSourceRoot ".git"))) {
+        if (Test-Path $GitSourceRoot) {
+            Remove-Item -Path $GitSourceRoot -Recurse -Force
+        }
+
+        $RepositoryUrl = "https://github.com/$($Manifest.source.repository).git"
+        Invoke-Git @("clone", "--no-checkout", $RepositoryUrl, $GitSourceRoot)
+    }
+
+    Invoke-Git @("-C", $GitSourceRoot, "fetch", "--depth", "1", "origin", $Manifest.source.commit)
+    Invoke-Git @("-C", $GitSourceRoot, "checkout", "--force", "--detach", "FETCH_HEAD")
+
+    if (Get-Command git-lfs -ErrorAction SilentlyContinue) {
+        Invoke-Git @("-C", $GitSourceRoot, "lfs", "pull")
+    }
+    else {
+        # `git lfs` can still be available as a git subcommand even when a
+        # standalone git-lfs executable is not discoverable via PowerShell.
+        & git -C $GitSourceRoot lfs version *> $null
+        if ($LASTEXITCODE -eq 0) {
+            Invoke-Git @("-C", $GitSourceRoot, "lfs", "pull")
+        }
+    }
+
+    $SourceFbx = Find-KayKitFbxDirectory $GitSourceRoot
 }
 
-$SourceFbx = Join-Path $AssetRoot.FullName "fbx"
-if (-not (Test-Path $SourceFbx)) {
-    throw "KayKit FBX directory not found: $SourceFbx"
+if (-not $SourceFbx) {
+    throw "Could not locate the KayKit FBX payload after archive extraction and pinned Git checkout."
 }
+
+$AssetRoot = $SourceFbx.Parent
+Write-Host "[ARASH CC0] Using KayKit FBX directory: $($SourceFbx.FullName)"
 
 $MissingRequired = New-Object System.Collections.Generic.List[string]
 $InstalledAssets = New-Object System.Collections.Generic.List[object]
 
 foreach ($Asset in $Manifest.assets) {
-    $SourcePath = Join-Path $SourceFbx $Asset.source
+    $SourcePath = Join-Path $SourceFbx.FullName $Asset.source
     $DestinationPath = Join-Path $StagingFbx $Asset.source
 
     if (-not (Test-Path $SourcePath)) {
@@ -107,7 +162,8 @@ Get-ChildItem -Path $AssetRoot.FullName -File -Recurse |
         Copy-Item -Path $_.FullName -Destination $Destination -Force
     }
 
-$License = Get-ChildItem -Path $AssetRoot.FullName -File -Recurse |
+$LicenseSearchRoot = if (Test-Path $GitSourceRoot) { $GitSourceRoot } else { $ExtractRoot }
+$License = Get-ChildItem -Path $LicenseSearchRoot -File -Recurse |
     Where-Object { $_.Name -match '^LICENSE(\.txt)?$' } |
     Select-Object -First 1
 
@@ -118,6 +174,7 @@ if ($License) {
 $InstallStamp = [ordered]@{
     installed_at_utc = [DateTime]::UtcNow.ToString("o")
     source = $Manifest.source
+    source_fbx = $SourceFbx.FullName
     assets = $InstalledAssets
 }
 
