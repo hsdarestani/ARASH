@@ -1,7 +1,8 @@
 param(
     [string]$UnrealRoot = "D:\UE_5.8",
     [switch]$ForceDownload,
-    [switch]$SkipLaunch
+    [switch]$SkipLaunch,
+    [switch]$SkipBuild
 )
 
 $ErrorActionPreference = "Stop"
@@ -10,20 +11,43 @@ $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $Project = Join-Path $RepoRoot "ARASH.uproject"
 $Installer = Join-Path $PSScriptRoot "install_cc0_vertical_slice.ps1"
 $PythonScript = Join-Path $RepoRoot "Content\Python\import_cc0_vertical_slice.py"
+$BuildScript = Join-Path $UnrealRoot "Engine\Build\BatchFiles\Build.bat"
 $EditorCmd = Join-Path $UnrealRoot "Engine\Binaries\Win64\UnrealEditor-Cmd.exe"
 $Editor = Join-Path $UnrealRoot "Engine\Binaries\Win64\UnrealEditor.exe"
 $Map = "/Game/Maps/PrototypeArena/NewMap"
 
-foreach ($RequiredPath in @($Project, $Installer, $PythonScript, $EditorCmd)) {
+foreach ($RequiredPath in @($Project, $Installer, $PythonScript, $BuildScript, $EditorCmd)) {
     if (-not (Test-Path $RequiredPath)) {
         throw "Required path not found: $RequiredPath"
     }
 }
 
-Write-Host "[ARASH CC0] Step 1/3 - Preparing pinned CC0 source assets."
+Write-Host "[ARASH CC0] Step 1/4 - Preparing pinned CC0 source assets."
 & $Installer -Force:$ForceDownload
 
-Write-Host "[ARASH CC0] Step 2/3 - Importing and verifying assets in Unreal Engine."
+if ($SkipBuild) {
+    Write-Host "[ARASH CC0] Step 2/4 - Win64 editor build skipped by request."
+}
+else {
+    Write-Host "[ARASH CC0] Step 2/4 - Building ARASHEditor for Win64 Development."
+    $BuildArguments = @(
+        "ARASHEditor",
+        "Win64",
+        "Development",
+        "-Project=$Project",
+        "-WaitMutex",
+        "-NoHotReloadFromIDE"
+    )
+
+    & $BuildScript @BuildArguments
+    if ($LASTEXITCODE -ne 0) {
+        throw "ARASHEditor Win64 build failed with exit code $LASTEXITCODE"
+    }
+
+    Write-Host "[ARASH CC0] Win64 editor build passed."
+}
+
+Write-Host "[ARASH CC0] Step 3/4 - Importing and verifying assets in Unreal Engine."
 $ImportArguments = @(
     $Project,
     "-ExecutePythonScript=$PythonScript",
@@ -31,8 +55,8 @@ $ImportArguments = @(
     "-nop4",
     "-nosplash",
     "-NoSound",
-    "-NoSplash",
-    "-NullRHI"
+    "-NullRHI",
+    "-SkipCompile"
 )
 
 & $EditorCmd @ImportArguments
@@ -43,7 +67,7 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "[ARASH CC0] Import verification passed."
 
 if ($SkipLaunch) {
-    Write-Host "[ARASH CC0] Step 3/3 - Launch skipped by request."
+    Write-Host "[ARASH CC0] Step 4/4 - Launch skipped by request."
     exit 0
 }
 
@@ -51,7 +75,7 @@ if (-not (Test-Path $Editor)) {
     throw "Unreal Editor not found: $Editor"
 }
 
-Write-Host "[ARASH CC0] Step 3/3 - Opening the playable prototype arena."
+Write-Host "[ARASH CC0] Step 4/4 - Opening the playable prototype arena."
 $ExecCmds = @(
     "r.Streaming.LimitPoolSizeToVRAM 1",
     "r.Streaming.PoolSize 560",
@@ -69,6 +93,7 @@ $ExecCmds = @(
 $LaunchArguments = @(
     $Project,
     $Map,
+    "-SkipCompile",
     "-ExecCmds=$ExecCmds"
 )
 
