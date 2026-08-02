@@ -80,6 +80,18 @@ private:
     TObjectPtr<UMaterialInterface> CourtMetalMaterial;
 
     UPROPERTY(Transient)
+    TObjectPtr<UMaterialInstanceDynamic> FloorFallbackMaterial;
+
+    UPROPERTY(Transient)
+    TObjectPtr<UMaterialInstanceDynamic> WallFallbackMaterial;
+
+    UPROPERTY(Transient)
+    TObjectPtr<UMaterialInstanceDynamic> StoneFallbackMaterial;
+
+    UPROPERTY(Transient)
+    TObjectPtr<UMaterialInstanceDynamic> MetalFallbackMaterial;
+
+    UPROPERTY(Transient)
     TObjectPtr<UMaterialInstanceDynamic> GoldMaterial;
 
     UPROPERTY(Transient)
