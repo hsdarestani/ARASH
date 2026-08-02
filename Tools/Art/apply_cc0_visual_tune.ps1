@@ -75,18 +75,20 @@ if (-not $Source.Contains('auto ResolveMaterial = []')) {
     $Source = $Source.Replace($SlotAnchor, $SlotReplacement.TrimEnd("`r", "`n"))
 }
 
-$Source = $Source.Replace(
-    'CourtFloorMaterial.Get()',
-    'ResolveMaterial(CourtFloorMaterial.Get(), FloorFallbackMaterial.Get())')
-$Source = $Source.Replace(
-    'CourtWallMaterial.Get()',
-    'ResolveMaterial(CourtWallMaterial.Get(), WallFallbackMaterial.Get())')
-$Source = $Source.Replace(
-    'CourtStoneMaterial.Get()',
-    'ResolveMaterial(CourtStoneMaterial.Get(), StoneFallbackMaterial.Get())')
-$Source = $Source.Replace(
-    'CourtMetalMaterial.Get()',
-    'ResolveMaterial(CourtMetalMaterial.Get(), MetalFallbackMaterial.Get())')
+$MaterialFallbacks = @(
+    @('CourtFloorMaterial.Get()', 'ResolveMaterial(CourtFloorMaterial.Get(), FloorFallbackMaterial.Get())'),
+    @('CourtWallMaterial.Get()', 'ResolveMaterial(CourtWallMaterial.Get(), WallFallbackMaterial.Get())'),
+    @('CourtStoneMaterial.Get()', 'ResolveMaterial(CourtStoneMaterial.Get(), StoneFallbackMaterial.Get())'),
+    @('CourtMetalMaterial.Get()', 'ResolveMaterial(CourtMetalMaterial.Get(), MetalFallbackMaterial.Get())')
+)
+
+foreach ($Pair in $MaterialFallbacks) {
+    $OldCall = $Pair[0]
+    $ResolvedCall = $Pair[1]
+    if (-not $Source.Contains($ResolvedCall)) {
+        $Source = $Source.Replace($OldCall, $ResolvedCall)
+    }
+}
 
 $Source = $Source.Replace('Light->SetIntensity(2.4f);', 'Light->SetIntensity(1.55f);')
 $Source = $Source.Replace(
