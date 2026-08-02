@@ -1,6 +1,8 @@
 param(
     [string]$UnrealRoot = "D:\UE_5.8",
+    [string]$BlenderExe = "",
     [switch]$ForceDownload,
+    [switch]$ForceHero,
     [switch]$SkipLaunch,
     [switch]$SkipBuild,
     [switch]$UseDx12
@@ -12,29 +14,64 @@ $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $Project = Join-Path $RepoRoot "ARASH.uproject"
 $Installer = Join-Path $PSScriptRoot "install_cc0_vertical_slice.ps1"
 $VisualTune = Join-Path $PSScriptRoot "apply_cc0_visual_tune.ps1"
-$PythonScript = Join-Path $RepoRoot "Content\Python\import_cc0_vertical_slice.py"
+$EnvironmentImporter = Join-Path $RepoRoot "Content\Python\import_cc0_vertical_slice.py"
+$HeroGenerator = Join-Path $RepoRoot "Tools\Blender\run_hero.ps1"
+$HeroIntegration = Join-Path $RepoRoot "Tools\Dev\integrate_generated_hero.ps1"
+$HeroImporter = Join-Path $RepoRoot "Tools\ArtPipeline\import_blender_hero.py"
+$HeroFbx = Join-Path $RepoRoot "ArtSource\Generated\Blender\Character\ARASH_HeroKit.fbx"
 $BuildScript = Join-Path $UnrealRoot "Engine\Build\BatchFiles\Build.bat"
 $EditorCmd = Join-Path $UnrealRoot "Engine\Binaries\Win64\UnrealEditor-Cmd.exe"
 $Editor = Join-Path $UnrealRoot "Engine\Binaries\Win64\UnrealEditor.exe"
 $Map = "/Game/Maps/PrototypeArena/NewMap"
 
-foreach ($RequiredPath in @($Project, $Installer, $VisualTune, $PythonScript, $BuildScript, $EditorCmd)) {
+$RequiredPaths = @(
+    $Project,
+    $Installer,
+    $VisualTune,
+    $EnvironmentImporter,
+    $HeroGenerator,
+    $HeroIntegration,
+    $HeroImporter,
+    $BuildScript,
+    $EditorCmd
+)
+
+foreach ($RequiredPath in $RequiredPaths) {
     if (-not (Test-Path $RequiredPath)) {
         throw "Required path not found: $RequiredPath"
     }
 }
 
-Write-Host "[ARASH CC0] Step 1/5 - Preparing pinned CC0 source assets."
+Write-Host "[ARASH Preview] Step 1/7 - Preparing pinned CC0 environment assets."
 & $Installer -Force:$ForceDownload
 
-Write-Host "[ARASH CC0] Step 2/5 - Applying Persian palette and low-VRAM runtime tune."
+Write-Host "[ARASH Preview] Step 2/7 - Applying Persian palette and low-VRAM runtime tune."
 & $VisualTune
 
-if ($SkipBuild) {
-    Write-Host "[ARASH CC0] Step 3/5 - Win64 editor build skipped by request."
+Write-Host "[ARASH Preview] Step 3/7 - Preparing and wiring the generated ARASH hero."
+& $HeroIntegration
+
+if ($ForceHero -or -not (Test-Path $HeroFbx)) {
+    if ($BlenderExe) {
+        & $HeroGenerator -BlenderExe $BlenderExe -Force:$ForceHero
+    }
+    else {
+        & $HeroGenerator -Force:$ForceHero
+    }
 }
 else {
-    Write-Host "[ARASH CC0] Step 3/5 - Building ARASHEditor for Win64 Development."
+    Write-Host "[ARASH Hero] Reusing generated hero kit: $HeroFbx"
+}
+
+if (-not (Test-Path $HeroFbx)) {
+    throw "Prepared ARASH hero FBX was not created: $HeroFbx"
+}
+
+if ($SkipBuild) {
+    Write-Host "[ARASH Preview] Step 4/7 - Win64 editor build skipped by request."
+}
+else {
+    Write-Host "[ARASH Preview] Step 4/7 - Building ARASHEditor for Win64 Development."
     $BuildArguments = @(
         "ARASHEditor",
         "Win64",
@@ -49,13 +86,11 @@ else {
         throw "ARASHEditor Win64 build failed with exit code $LASTEXITCODE"
     }
 
-    Write-Host "[ARASH CC0] Win64 editor build passed."
+    Write-Host "[ARASH Preview] Win64 editor build passed."
 }
 
-Write-Host "[ARASH CC0] Step 4/5 - Importing and verifying assets in Unreal Engine."
-$ImportArguments = @(
+$CommonImportArguments = @(
     $Project,
-    "-ExecutePythonScript=$PythonScript",
     "-unattended",
     "-nop4",
     "-nosplash",
@@ -64,15 +99,24 @@ $ImportArguments = @(
     "-SkipCompile"
 )
 
-& $EditorCmd @ImportArguments
+Write-Host "[ARASH Preview] Step 5/7 - Importing and verifying environment assets."
+$EnvironmentArguments = @($Project, "-ExecutePythonScript=$EnvironmentImporter") + $CommonImportArguments[1..($CommonImportArguments.Count - 1)]
+& $EditorCmd @EnvironmentArguments
 if ($LASTEXITCODE -ne 0) {
-    throw "Unreal CC0 import failed with exit code $LASTEXITCODE"
+    throw "Unreal environment import failed with exit code $LASTEXITCODE"
 }
+Write-Host "[ARASH Preview] Environment import verification passed."
 
-Write-Host "[ARASH CC0] Import verification passed."
+Write-Host "[ARASH Preview] Step 6/7 - Importing the prepared modular ARASH hero."
+$HeroArguments = @($Project, "-ExecutePythonScript=$HeroImporter") + $CommonImportArguments[1..($CommonImportArguments.Count - 1)]
+& $EditorCmd @HeroArguments
+if ($LASTEXITCODE -ne 0) {
+    throw "Unreal hero import failed with exit code $LASTEXITCODE"
+}
+Write-Host "[ARASH Preview] Hero import verification passed."
 
 if ($SkipLaunch) {
-    Write-Host "[ARASH CC0] Step 5/5 - Launch skipped by request."
+    Write-Host "[ARASH Preview] Step 7/7 - Launch skipped by request."
     exit 0
 }
 
@@ -80,7 +124,7 @@ if (-not (Test-Path $Editor)) {
     throw "Unreal Editor not found: $Editor"
 }
 
-Write-Host "[ARASH CC0] Step 5/5 - Opening the playable prototype arena."
+Write-Host "[ARASH Preview] Step 7/7 - Opening the playable prototype arena."
 $ExecCmds = @(
     "r.Streaming.LimitPoolSizeToVRAM 1",
     "r.Streaming.PoolSize 320",
@@ -117,5 +161,5 @@ $Process = Start-Process `
     -WorkingDirectory $RepoRoot `
     -PassThru
 
-Write-Host "[ARASH CC0] Unreal Editor started (PID $($Process.Id))."
-Write-Host "[ARASH CC0] Press Play in PrototypeArena to test the imported environment."
+Write-Host "[ARASH Preview] Unreal Editor started (PID $($Process.Id))."
+Write-Host "[ARASH Preview] Press Play in PrototypeArena. The generated ARASH hero should replace the primitive placeholder."
