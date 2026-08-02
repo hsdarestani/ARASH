@@ -1,0 +1,77 @@
+{
+  "source": {
+    "name": "KayKit Dungeon Remastered 1.0",
+    "repository": "KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0",
+    "commit": "b0ca9bd96a8072ab36a3a5464f00ed1e06a16d07",
+    "archive_url": "https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0/archive/b0ca9bd96a8072ab36a3a5464f00ed1e06a16d07.zip",
+    "license": "CC0-1.0",
+    "asset_root": "addons/kaykit_dungeon_remastered/Assets"
+  },
+  "staging_root": "ArtSource/CC0/KayKit/DungeonRemastered",
+  "destination_path": "/Game/Art/Generated/Environment",
+  "assets": [
+    {
+      "role": "FloorTile",
+      "source": "floor_tile_large.fbx",
+      "destination": "SM_ARASH_FloorTile_A",
+      "material_slot": "Floor",
+      "required": true
+    },
+    {
+      "role": "FloorMedallion",
+      "source": "floor_tile_small_decorated.fbx",
+      "destination": "SM_ARASH_FloorMedallion_A",
+      "material_slot": "Turquoise",
+      "required": true
+    },
+    {
+      "role": "Wall",
+      "source": "wall.fbx",
+      "destination": "SM_ARASH_Wall_A",
+      "material_slot": "Wall",
+      "required": true
+    },
+    {
+      "role": "Pillar",
+      "source": "column.fbx",
+      "destination": "SM_ARASH_Pillar_A",
+      "material_slot": "Stone",
+      "required": true
+    },
+    {
+      "role": "Brazier",
+      "source": "torch_lit.fbx",
+      "destination": "SM_ARASH_Brazier_A",
+      "material_slot": "Emissive",
+      "required": true
+    },
+    {
+      "role": "Banner",
+      "source": "banner_patternC_red.fbx",
+      "destination": "SM_ARASH_Banner_A",
+      "material_slot": "Crimson",
+      "required": false
+    },
+    {
+      "role": "BrokenColumn",
+      "source": "wall_broken.fbx",
+      "destination": "SM_ARASH_BrokenColumn_A",
+      "material_slot": "Stone",
+      "required": false
+    },
+    {
+      "role": "Rubble",
+      "source": "floor_tile_large_rocks.fbx",
+      "destination": "SM_ARASH_Rubble_A",
+      "material_slot": "Stone",
+      "required": false
+    },
+    {
+      "role": "Gate",
+      "source": "wall_gated.fbx",
+      "destination": "SM_ARASH_Gate_A",
+      "material_slot": "Wall",
+      "required": false
+    }
+  ]
+}
